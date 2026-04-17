@@ -528,7 +528,7 @@ function parseArticleHTML(rawHTML) {
   // Remove noise
   output.querySelectorAll(
     '.mw-editsection, .noprint, .navbox, .navigation-not-searchable, ' +
-    '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription'
+    '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription, .toc'
   ).forEach(el => el.remove());
 
   // Modern Wikipedia wraps headings in <div class="mw-heading mw-heading2">
