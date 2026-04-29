@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Wikipedia Minerva Tester</title>
+  <style>
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Base ──────────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #e9ebee;
+    }
+
+    /* ── Control bar ───────────────────────────────────────── */
+    #control-bar {
+      background: #1d1f23;
+      padding: 7px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 300;
+    }
+    #home-link { color: #888; font-size: 11px; font-family: monospace; flex-shrink: 0; text-decoration: none; }
+    #home-link:hover { color: #aaa; text-decoration: underline; }
+    #lang-input {
+      width: 48px; padding: 5px 7px;
+      background: #2d2f35; border: 1px solid #555; color: #eee;
+      font-size: 13px; border-radius: 4px; font-family: monospace;
+    }
+    #article-input {
+      flex: 1; min-width: 160px; padding: 5px 8px;
+      background: #2d2f35; border: 1px solid #555; color: #eee;
+      font-size: 13px; border-radius: 4px;
+    }
+    #load-btn {
+      padding: 5px 16px; background: #3366cc; color: #fff;
+      border: none; border-radius: 4px; font-size: 13px;
+      font-weight: 600; cursor: pointer; flex-shrink: 0;
+    }
+    #load-btn:hover { background: #1a4fbf; }
+    #status-text { color: #888; font-size: 11px; font-family: monospace; }
+
+    /* ── Page wrapper ──────────────────────────────────────── */
+    #page-wrapper {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      min-height: calc(100vh - 38px);
+      overflow-x: clip;
+    }
+
+    /* ── Minerva header ────────────────────────────────────── */
+    .mw-header {
+      height: 54px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dadde3;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .mw-menu-btn, .mw-search-btn {
+      background: none; border: none; cursor: pointer;
+      color: #54595d; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mw-wordmark {
+      position: absolute;
+      left: 60px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      line-height: 0;
+    }
+    .mw-search-btn {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* ── Article outer wrapper ─────────────────────────────── */
+    .article-outer {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Title section ─────────────────────────────────────── */
+    .article-title-section { padding: 30px 16px 0; }
+    .article-title-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px;
+    }
+    .article-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 27.2px; line-height: 36px;
+      color: #101418; font-weight: normal;
+      flex: 1; min-width: 0;
+    }
+    .article-actions {
+      display: flex; align-items: center;
+      gap: 0; flex-shrink: 0; padding-top: 6px;
+    }
+    .article-action-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none; cursor: pointer;
+      color: #3366cc; border-radius: 2px;
+    }
+
+    /* ── InfoChips ─────────────────────────────────────────── */
+    .article-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      align-items: center; margin-top: 8px;
+    }
+    .infochip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #e8eeff; color: #3366cc;
+      border-radius: 9999px; padding: 1px 6px;
+      font-size: 12px; line-height: 20px;
+      cursor: pointer; text-decoration: none; white-space: nowrap;
+    }
+    .infochip svg { flex-shrink: 0; }
+
+    /* ── Image gallery ─────────────────────────────────────── */
+    .gallery-scroll {
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-left: 16px;
+    }
+    .gallery-scroll::-webkit-scrollbar { display: none; }
+    .gallery-track { display: flex; gap: 4px; }
+    .gallery-img {
+      width: 175px; height: 175px;
+      flex-shrink: 0; object-fit: cover;
+      display: block; background: #f8f9fa;
+    }
+    /* ── Article text (shared base) ────────────────────────── */
+    .art {
+      padding: 0 16px;
+      color: #202122;
+      font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    .art a { color: #3366cc; text-decoration: none; }
+    .art a:hover { text-decoration: underline; }
+    .art sup { font-size: 9px; vertical-align: super; line-height: 0; }
+    .art sup a { color: #3366cc; }
+    .art small { font-size: 12px; }
+
+    /* Lead uses same sizing as body — no separate overrides */
+
+    /* Body sections — 16px */
+    .art.body p, .art.body li { font-size: 16px; line-height: 26.4px; margin-bottom: 16px; }
+    .art.body p:last-child { margin-bottom: 0; }
+    .art.body ul, .art.body ol { padding-left: 22px; margin-bottom: 16px; }
+    .art.body h3 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 20px; line-height: 26px; font-weight: normal;
+      color: #101418; margin: 16px 0 8px;
+    }
+    .art.body h4 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 17px; line-height: 23px; font-weight: normal;
+      color: #101418; margin: 12px 0 6px;
+    }
+
+    /* Infobox */
+    .art table.infobox {
+      width: 100%; border-collapse: collapse;
+      font-size: 14.4px; line-height: 24px;
+      color: #202122; margin: 0 0 12px;
+    }
+    .art table.infobox caption {
+      font-weight: bold; text-align: center; font-size: 14.4px;
+      padding: 8px 10px; border: 1px solid #eaecf0; border-bottom: none;
+    }
+    .art table.infobox th,
+    .art table.infobox td {
+      border: 1px solid #eaecf0; padding: 8px 10px; vertical-align: top;
+    }
+    .art table.infobox .infobox-above th,
+    .art table.infobox .infobox-title th,
+    .art table.infobox .infobox-header th {
+      text-align: center; font-weight: bold;
+    }
+    .art table.infobox .infobox-image td { text-align: center; }
+    .art table.infobox img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+    /* Tighter list & paragraph styling inside infobox —
+       overrides the body-section defaults (16px / 26.4px / 16px margin) */
+    .art table.infobox ul,
+    .art table.infobox ol {
+      padding-left: 16px;
+      margin: 2px 0;
+    }
+    .art table.infobox li {
+      font-size: 14.4px;
+      line-height: 20px;
+      margin-bottom: 2px;
+    }
+    .art table.infobox li:last-child { margin-bottom: 0; }
+    .art table.infobox p { font-size: 14.4px; line-height: 20px; margin-bottom: 4px; }
+    .art table.infobox p:last-child { margin-bottom: 0; }
+
+    /* Infobox collapse */
+    .infobox-wrap { position: relative; margin-bottom: 12px; }
+    .infobox-wrap.collapsed { max-height: 750px; overflow: hidden; margin-bottom: 0; }
+    .infobox-fade {
+      position: absolute;
+      bottom: 40px; left: 0; right: 0;
+      height: 72px;
+      background: linear-gradient(to bottom, transparent, #fff);
+      pointer-events: none;
+    }
+    .infobox-read-more {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 40px;
+      background: #fff;
+      border: 1px solid #eaecf0;
+      color: #3366cc;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      cursor: pointer;
+      text-align: center;
+    }
+    .infobox-read-more:hover { background: #f8f9fa; }
+
+    /* Blockquote */
+    .art blockquote {
+      border-left: 3px solid #c8ccd1;
+      padding: 6px 32px 6px 40px;
+      font-family: 'Charter', 'Bitstream Charter', Georgia, serif;
+      font-size: 17.6px; line-height: 29.04px; color: #202122;
+      margin: 8px 0;
+    }
+
+    /* Floated thumb images */
+    .art .thumb, .art .tright {
+      float: right; margin: 0 0 12px 16px; max-width: 220px; clear: right;
+    }
+    .art .tleft {
+      float: left; margin: 0 16px 12px 0; max-width: 220px; clear: left;
+    }
+    .art .thumb img, .art .tright img, .art .tleft img,
+    .art figure img {
+      max-width: 100%; height: auto; display: block;
+    }
+    .art .thumbcaption, .art figcaption {
+      font-size: 13px; line-height: 19.5px; color: #54595d; margin-top: 6px;
+    }
+    .art figure { margin: 10px 0; max-width: 220px; }
+
+    /* Other Wikipedia tables */
+    .art table:not(.infobox) {
+      width: 100%; border-collapse: collapse;
+      font-size: 14px; margin: 8px 0; overflow-x: auto; display: block;
+    }
+    .art table:not(.infobox) th,
+    .art table:not(.infobox) td {
+      border: 1px solid #eaecf0; padding: 6px 8px; font-size: 14px;
+    }
+
+    /* Wikipedia-specific noise to hide */
+    .art .mw-editsection, .art .noprint, .art .navbox,
+    .art .navigation-not-searchable, .art .geo-dms,
+    .art .geo-nondefault, .art .mw-kartographer-map,
+    .art .mbox-small, .art .ambox, .art .tmbox { display: none; }
+
+    /* Clearfix */
+    .art::after { content: ''; display: table; clear: both; }
+
+    /* ── Accordion sections ────────────────────────────────── */
+    .acc-section {}
+    .acc-header {
+      background: #fff;
+    }
+    .acc-section.open .acc-header {
+      position: sticky;
+      top: var(--control-bar-h, 38px);
+      z-index: 10;
+    }
+    .acc-btn {
+      width: 100%; display: flex; align-items: flex-start;
+      background: none; border: none; padding: 12px 16px 8px;
+      cursor: pointer; text-align: left;
+    }
+    .acc-chevron {
+      width: 16px; height: 16px; flex-shrink: 0; margin-top: 7px;
+      color: #54595d; transition: transform 0.15s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .acc-section.open .acc-chevron { transform: rotate(90deg); }
+    .acc-title-group { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .acc-title {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 24px; line-height: 31.2px;
+      color: #101418; font-weight: normal;
+    }
+    .acc-link-list {
+      font-size: 14px; line-height: 20px;
+      color: #54595d; overflow: hidden;
+      max-height: 40px; /* 2 lines */
+    }
+    .acc-link-list a { color: #3366cc; text-decoration: none; }
+    .acc-link-list a:hover { text-decoration: underline; }
+    /* focused target in the article body */
+    .art.body a:focus,
+    .art.body h3:focus,
+    .art.body h4:focus,
+    .art.body h5:focus,
+    .art.body h6:focus {
+      outline: 2px solid #3366cc;
+      outline-offset: 2px;
+      border-radius: 1px;
+    }
+    .acc-divider { height: 1px; background: #dadde3; margin: 0 16px; }
+    .acc-body { display: none; padding: 8px 0 0; }
+    .acc-section.open .acc-body { display: block; }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    .article-footer { margin-top: 32px; }
+
+    /* Last edited bar */
+    .foot-lastedit {
+      height: 36px; background: #eaecf0;
+      border-top: 1px solid #c8ccd1; border-bottom: 1px solid #c8ccd1;
+      display: flex; align-items: center; padding: 0 16px; gap: 8px;
+      cursor: pointer; overflow: hidden;
+    }
+    .foot-lastedit-icon { width: 20px; height: 20px; flex-shrink: 0; color: #54595d; }
+    .foot-lastedit-text {
+      flex: 1; font-size: 14px; color: #54595d;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 19.6px;
+    }
+    .foot-lastedit-chev { width: 16px; height: 16px; color: #54595d; flex-shrink: 0; }
+
+    /* Related pages */
+    .foot-related { background: #eaecf0; padding: 42px 16px 0; }
+    .foot-related-label {
+      font-size: 13px; color: #54595d; letter-spacing: 0.9px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .related-item {
+      display: flex; height: 80px; border: 1px solid #dadde3;
+      overflow: hidden; cursor: pointer; background: #fff;
+    }
+    .related-item:not(:first-child) { border-top: none; }
+    .related-item:first-child { border-radius: 2px 2px 0 0; }
+    .related-item:last-child { border-radius: 0 0 2px 2px; }
+    .related-thumb {
+      width: 80px; height: 80px; object-fit: cover;
+      flex-shrink: 0; mix-blend-mode: darken;
+    }
+    .related-thumb-ph {
+      width: 80px; height: 80px; flex-shrink: 0; background: #eaecf0;
+    }
+    .related-text {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 2px; justify-content: center; padding: 0 12px; min-width: 0;
+    }
+    .related-title {
+      font-size: 16px; font-weight: bold; line-height: 20.8px;
+      color: #202122; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .related-desc {
+      font-size: 12.8px; line-height: 17.92px; color: #72777d;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Generic footer */
+    .foot-generic {
+      background: #eaecf0; padding: 40px 16px 24px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .foot-wm { line-height: 0; }
+    .foot-hr { height: 1px; background: #dadde3; border: none; }
+    .foot-license {
+      font-size: 14px; line-height: 19.6px; color: #202122;
+    }
+    .foot-license a { color: #3366cc; }
+    .foot-links { font-size: 14px; line-height: 19.6px; color: #101418; }
+    .foot-links a { color: #101418; text-decoration: none; }
+
+    /* ── Page preview canvas ─────────────────────────────────── */
+    #pp-backdrop {
+      position: fixed; inset: 0; z-index: 399;
+      background: rgba(240, 244, 250, 0.78);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      pointer-events: auto;
+      cursor: grab;
+      user-select: none;
+      animation: pp-backdrop-in 0.22s ease-out;
+    }
+    #pp-backdrop.pp-dragging { cursor: grabbing; }
+    @keyframes pp-backdrop-in {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    #pp-canvas {
+      position: fixed; inset: 0; pointer-events: none;
+      overflow: visible; z-index: 400;
+      will-change: transform;
+    }
+    #pp-canvas.pp-panning {
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #pp-graph {
+      position: absolute; left: 0; top: 0;
+      width: 1px; height: 1px; overflow: visible; pointer-events: none;
+    }
+    .pp-card-anchor { position: absolute; width: 0; height: 0; overflow: visible; }
+    .pp-card {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 277px;
+      background: #fff;
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06), 0 0 16px rgba(0,0,0,0.06);
+      display: flex; flex-direction: column; align-items: flex-end;
+      padding: 6px 12px 12px;
+      pointer-events: auto;
+      animation: pp-fadein 0.18s ease-out;
+    }
+    @keyframes pp-fadein {
+      from { opacity: 0; transform: translate(-50%, -48%); }
+      to   { opacity: 1; transform: translate(-50%, -50%); }
+    }
+    .pp-close-btn {
+      width: 32px; height: 32px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; padding: 5px;
+      border-radius: 2px; color: #54595d; font-size: 18px; line-height: 1;
+    }
+    .pp-close-btn:hover { background: rgba(0,0,0,0.04); }
+    .pp-card-body { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .pp-card-img-wrap {
+      width: 100%; height: 138px;
+      border-radius: 2px; overflow: hidden;
+      background: #eaecf0; flex-shrink: 0;
+    }
+    .pp-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pp-card-quote { width: 100%; padding: 0 8px 4px; }
+    .pp-quote-icon { display: block; margin-bottom: 3px; }
+    .pp-card-text {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 14px; line-height: 22px; color: #202122;
+    }
+    .pp-card-text b { font-weight: bold; font-family: Georgia, 'Times New Roman', serif; }
+    .pp-readmore-row {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 4px; width: 100%; padding-top: 6px;
+    }
+    .pp-readmore {
+      color: #3366cc; font-size: 14px; line-height: 20px;
+      text-decoration: none; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .pp-node {
+      position: absolute; opacity: 0;
+      background: #fff; border: 1px solid #c8ccd1;
+      border-radius: 2px; overflow: hidden;
+      will-change: transform, opacity;
+      pointer-events: auto;
+    }
+    .pp-node img { width: 100%; display: block; object-fit: cover; }
+    .pp-caption {
+      font-size: 11px; line-height: 14px; color: #202122;
+      padding: 3px 4px;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+    @keyframes pp-bloom {
+      0%   { opacity: 0; transform: scale(0.1) rotate(var(--bloom-rot, 0deg)); }
+      65%  { opacity: 1; transform: scale(1.07) rotate(0deg); }
+      100% { opacity: 1; transform: scale(1)    rotate(0deg); }
+    }
+    a.pp-active-link { background: rgba(51,102,204,0.1); }
+
+    /* ── History chips bar ─────────────────────────────────── */
+    #pp-history-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 404;
+      display: flex; align-items: center; flex-direction: row;
+      gap: 6px; padding: 8px 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      background: rgba(255,255,255,0.95);
+      border-top: 1px solid #c8ccd1;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    }
+    #pp-history-bar::-webkit-scrollbar { display: none; }
+    #pp-global-progress {
+      position: absolute; top: 0; left: 0; height: 3px;
+      background: #3366cc; width: 0%;
+      transition: width 0.28s ease-out;
+      pointer-events: none;
+    }
+    #pp-global-progress.pp-progress-done {
+      opacity: 0;
+      transition: width 0.28s ease-out, opacity 0.55s ease-out 0.35s;
+    }
+    .pp-chip {
+      flex-shrink: 0;
+      display: inline-flex; align-items: center;
+      background: #f8f9fa; border: 1px solid #c8ccd1;
+      border-radius: 12px; padding: 4px 10px;
+      font-size: 12px; line-height: 16px; color: #202122;
+      cursor: pointer; white-space: nowrap;
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+      transition: background 0.12s, border-color 0.12s;
+      user-select: none;
+    }
+    .pp-chip:hover { background: #eaecf0; }
+    .pp-chip-active { background: rgba(51,102,204,0.08) !important; border-color: #3366cc !important; color: #3366cc; }
+    .pp-node-seen { border-color: #3366cc !important; }
+
+    /* ── States ─────────────────────────────────────────────── */
+    .state-loading {
+      padding: 80px 16px; text-align: center;
+      color: #54595d; font-size: 14px;
+    }
+    .state-error {
+      padding: 40px 16px; text-align: center;
+      color: #b32424; font-size: 14px; line-height: 22px;
+    }
+    .state-empty {
+      padding: 80px 16px; text-align: center;
+      color: #72777d; font-size: 14px; line-height: 22px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="control-bar">
+  <a href="../index.html" id="home-link">home</a>
+  <input id="lang-input" type="text" value="en" maxlength="10" autocomplete="off" spellcheck="false">
+  <input id="article-input" type="text" value="" placeholder="Article title…" autocomplete="off" spellcheck="false">
+  <button id="load-btn">Load</button>
+  <span id="status-text"></span>
+</div>
+
+<div id="page-wrapper">
+  <!-- Minerva header — always present -->
+  <header class="mw-header">
+    <button class="mw-menu-btn" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4.5"  width="16" height="1.5" rx="0.75" fill="#54595d"/>
+        <rect x="2" y="9.25" width="16" height="1.5" rx="0.75" fill="#54595d"/>
+        <rect x="2" y="14"   width="16" height="1.5" rx="0.75" fill="#54595d"/>
+      </svg>
+    </button>
+    <a class="mw-wordmark" href="#" aria-label="Wikipedia"><svg width="116" height="20" viewBox="0 0 116 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.2344 0.29C15.1444 0.29 15.6145 0.34 16.2345 0.34C16.8545 0.34 17.4246 0.34 18.0346 0.29C18.1804 0.56168 18.1804 0.88832 18.0346 1.16C16.7545 1.37 16.2145 2.38 15.6045 3.62L13.7544 7.31L16.9145 14.31H17.0045L21.7248 3.44C22.3148 2.01 22.2648 1.3 20.6647 1.16C20.5171 0.88878 20.5171 0.56122 20.6647 0.29C21.8248 0.29 22.5448 0.34 23.1148 0.34C23.6849 0.34 24.3049 0.34 25.2849 0.29C25.4325 0.56122 25.4325 0.88878 25.2849 1.16C23.6549 1.37 23.3748 2.38 22.8548 3.62L17.0045 17.13C16.8345 17.53 16.6845 17.74 16.4145 17.74C16.1445 17.74 15.9745 17.53 15.8445 17.13L12.5243 9.44L8.87414 17.13C8.72413 17.53 8.55413 17.74 8.28411 17.74C8.0141 17.74 7.86409 17.53 7.71409 17.13L2.34383 3.58C1.58379 1.7 1.53379 1.3 0.123719 1.17C-0.0338158 0.89962 -0.0413697 0.56726 0.103719 0.29C1.26377 0.29 1.68379 0.34 2.67384 0.34C3.66389 0.34 4.25392 0.32 5.41397 0.29C5.56159 0.56122 5.56159 0.88878 5.41397 1.16C3.8539 1.34 3.7939 1.76 4.41393 3.28L8.93414 14.28H9.00415L11.7643 8.28L9.72418 3.58C8.90414 1.7 8.70413 1.33 7.64408 1.17C7.49829 0.89832 7.49829 0.57168 7.64408 0.3C8.43412 0.3 8.85414 0.35 9.84419 0.35C10.8342 0.35 11.2043 0.35 12.0943 0.3C12.2419 0.57122 12.2419 0.89878 12.0943 1.17C11.0942 1.33 11.1543 1.78 11.8343 3.29L13.0043 6L13.1143 6.12L14.4244 3.49C15.1844 1.96 15.2844 1.37 14.2244 1.21C14.0631 0.92357 14.0669 0.57286 14.2344 0.29ZM28.5155 14.19C28.5155 16.39 28.7855 16.49 30.2955 16.6C30.4431 16.8712 30.4431 17.1988 30.2955 17.47C29.2355 17.47 28.6155 17.42 27.5555 17.42C26.4955 17.42 25.8255 17.42 24.7855 17.47C24.6397 17.1983 24.6397 16.8717 24.7855 16.6C26.2955 16.47 26.5655 16.39 26.5655 14.19V8.47C26.5655 6.27 26.2955 6.17 24.7855 6.06C24.6397 5.78832 24.6397 5.46168 24.7855 5.19C25.8455 5.19 26.4655 5.24 27.5255 5.24C28.5855 5.24 29.2555 5.24 30.2955 5.19C30.4431 5.46122 30.4431 5.78878 30.2955 6.06C28.7855 6.19 28.5155 6.27 28.5155 8.47V14.19V14.19ZM32.6354 6.06C32.4897 5.78832 32.4897 5.46168 32.6354 5.19C33.6354 5.19 34.3154 5.24 35.4054 5.24C36.3154 5.24 36.7154 5.24 37.7754 5.19C37.9212 5.46168 37.9212 5.78832 37.7754 6.06C36.5854 6.19 36.3654 6.27 36.3654 8.47V10.83C37.1754 10.83 37.9054 10.41 38.9554 9.14C40.8554 6.84 41.1054 6.14 39.8654 6.07C39.7178 5.79878 39.7178 5.47122 39.8654 5.2C40.9254 5.2 41.8654 5.25 42.5854 5.25C43.3054 5.25 43.6454 5.25 44.3154 5.2C44.4612 5.47168 44.4612 5.79832 44.3154 6.07C43.3105 6.00834 42.3344 6.41878 41.6754 7.18L39.5554 9.79C39.1354 10.27 38.9854 10.56 38.9854 10.79C39.0066 10.9603 39.084 11.1187 39.2054 11.24L42.8654 15.85C43.2764 16.2964 43.8406 16.5714 44.4454 16.62C44.5933 16.8841 44.5933 17.206 44.4454 17.47H42.5454C41.9054 17.47 41.2854 17.47 41.0154 17.52V17.1C41.0531 16.6975 40.9187 16.2979 40.6454 16L37.9054 12.39C37.5363 11.9301 36.9633 11.683 36.3754 11.73V14.19C36.3754 16.39 36.5954 16.47 37.7854 16.6C37.9312 16.8717 37.9312 17.1983 37.7854 17.47C36.7254 17.47 36.3254 17.42 35.4154 17.42C34.3254 17.42 33.6854 17.42 32.6454 17.47C32.4997 17.1983 32.4997 16.8717 32.6454 16.6C34.1554 16.47 34.4254 16.39 34.4254 14.19V8.47C34.4154 6.27 34.1454 6.19 32.6354 6.06ZM50.0058 14.19C50.0058 16.39 50.2758 16.49 51.7857 16.6C51.9333 16.8712 51.9333 17.1988 51.7857 17.47C50.7257 17.47 50.1058 17.42 49.0458 17.42C47.9858 17.42 47.3158 17.42 46.2758 17.47C46.13 17.1983 46.13 16.8717 46.2758 16.6C47.7857 16.47 48.0558 16.39 48.0558 14.19V8.47C48.0558 6.27 47.7857 6.17 46.2758 6.06C46.13 5.78832 46.13 5.46168 46.2758 5.19C47.3358 5.19 47.9558 5.24 49.0158 5.24C50.0758 5.24 50.7458 5.24 51.7857 5.19C51.9333 5.46122 51.9333 5.78878 51.7857 6.06C50.3258 6.2 50.0058 6.27 50.0058 8.47V14.19V14.19ZM59.7162 16.6C59.862 16.8717 59.862 17.1983 59.7162 17.47C58.6562 17.47 58.0362 17.42 56.9762 17.42C55.9162 17.42 55.2462 17.42 54.2062 17.47C54.0586 17.1988 54.0586 16.8712 54.2062 16.6C55.7162 16.47 55.9862 16.39 55.9862 14.19V8.47C55.9862 6.27 55.7162 6.17 54.2062 6.06C54.0586 5.78878 54.0586 5.46122 54.2062 5.19C55.2662 5.19 55.8862 5.24 56.9462 5.24C57.6162 5.24 58.6562 5.19 59.5662 5.19C63.0762 5.19 63.8162 7.04 63.8162 8.42C63.8414 9.55828 63.3864 10.6546 62.5625 11.4404C61.7386 12.2263 60.622 12.629 59.4862 12.55C58.9754 12.5529 58.4702 12.4437 58.0062 12.23V14.23C58.0062 16.39 58.2562 16.49 59.7662 16.6H59.7162ZM58.0068 11.38C58.5199 11.579 59.0665 11.6775 59.6168 11.67C61.0968 11.67 61.7468 10.67 61.7468 8.73C61.7468 6.79 60.9568 6.06 59.4968 6.06C58.3068 6.06 58.0168 6.4 58.0168 7.25L58.0068 11.38ZM69.4966 11.46V15.46C69.4966 15.96 69.8466 16.63 70.2866 16.63H72.3366C73.8966 16.63 74.6066 15.31 75.0066 13.74C75.2412 13.6675 75.4962 13.7081 75.6966 13.85C75.5118 15.0784 75.2648 16.2966 74.9566 17.5C74.9566 17.5 73.3266 17.45 72.3366 17.45H68.5066L65.7366 17.5C65.5909 17.2283 65.5909 16.9017 65.7366 16.63C67.2466 16.5 67.5166 16.42 67.5166 14.22V8.47001C67.5166 6.27001 67.2466 6.17001 65.7366 6.06001C65.5909 5.78833 65.5909 5.46169 65.7366 5.19001L68.4766 5.24001H73.5866C73.9224 5.23962 74.2574 5.20612 74.5866 5.14001C74.6366 5.14001 74.6566 5.14001 74.6566 5.22001C74.6566 5.30001 75.0066 7.47001 75.0966 8.37002C74.8918 8.48075 74.658 8.52612 74.4266 8.50001C74.0066 7.00001 73.6966 6.12001 72.1666 6.12001H70.2666C70.0603 6.09975 69.8553 6.16938 69.704 6.31108C69.5528 6.45279 69.4699 6.65283 69.4766 6.86001V10.62H70.8866C72.6166 10.62 72.5366 10.33 72.5866 9.14001C72.7977 9.00786 73.0656 9.00786 73.2766 9.14001C73.2766 9.80001 73.2766 10.28 73.2766 11.02C73.2766 11.76 73.2766 12.19 73.2766 12.95C73.0656 13.0822 72.7977 13.0822 72.5866 12.95C72.5366 11.95 72.5866 11.47 70.8866 11.47H69.4666L69.4966 11.46ZM83.8477 5.19C88.0077 5.19 90.0077 7.94 90.0077 11.46C90.0077 16.09 86.9477 17.46 84.1977 17.46C82.1977 17.46 81.3277 17.41 80.5877 17.41C79.4977 17.41 78.8577 17.41 77.8177 17.46C77.6701 17.1888 77.6701 16.8612 77.8177 16.59C79.3277 16.46 79.5977 16.38 79.5977 14.18V8.47C79.5977 6.27 79.3277 6.17 77.8177 6.06C77.6701 5.78878 77.6701 5.46122 77.8177 5.19C78.8777 5.19 79.4977 5.24 80.5577 5.24C81.0077 5.24 83.2077 5.19 83.8477 5.19ZM83.598 16.6C86.318 16.6 87.848 15.6 87.848 11.91C87.848 9.16 87.278 6.06 83.128 6.06C82.128 6.06 81.548 6.22 81.548 6.88V15.4C81.548 16.15 81.728 16.6 83.598 16.6ZM95.6984 14.19C95.6984 16.39 95.9684 16.49 97.4784 16.6C97.6241 16.8717 97.6242 17.1983 97.4784 17.47C96.4184 17.47 95.7984 17.42 94.7384 17.42C93.6784 17.42 93.0084 17.42 91.9684 17.47C91.8226 17.1983 91.8226 16.8717 91.9684 16.6C93.4784 16.47 93.7484 16.39 93.7484 14.19V8.47C93.7484 6.27 93.4784 6.17 91.9684 6.06C91.8226 5.78832 91.8226 5.46168 91.9684 5.19C93.0284 5.19 93.6484 5.24 94.7084 5.24C95.7684 5.24 96.4384 5.24 97.4784 5.19C97.6241 5.46168 97.6241 5.78832 97.4784 6.06C96.0084 6.2 95.7084 6.27 95.7084 8.47L95.6984 14.19ZM104.489 16.6C104.636 16.8712 104.636 17.1988 104.489 17.47C103.579 17.47 102.339 17.42 101.329 17.42C100.319 17.42 100.049 17.42 99.1289 17.47C98.9831 17.1983 98.9831 16.8717 99.1289 16.6C100.302 16.666 101.35 15.8688 101.599 14.72L107.099 0.95C107.379 0.24 107.569 0 107.929 0C108.289 0 108.419 0.28 108.599 0.8L113.669 15.15C114.129 16.51 114.939 16.51 115.889 16.61C116.036 16.8812 116.036 17.2088 115.889 17.48C114.979 17.48 114.089 17.43 113.069 17.43C112.049 17.43 110.749 17.43 109.829 17.48C109.683 17.2083 109.683 16.8817 109.829 16.61C111.009 16.52 112.029 16.61 111.659 15.53L110.159 11H105.009C104.419 11 104.269 11.1 104.149 11.45L102.789 15.29C102.409 16.42 103.569 16.53 104.499 16.6H104.489ZM109.748 9.92999L107.348 2.85999H107.298L104.818 9.57998C104.718 9.86998 104.888 9.92999 105.438 9.92999H109.748Z" fill="#54595D"/></svg></a>
+    <button class="mw-search-btn" aria-label="Search">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="#54595d" stroke-width="1.5"/>
+        <path d="M13 13 L17.5 17.5" stroke="#54595d" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Article rendered here -->
+  <main id="article-root">
+    <div class="state-empty">
+      Enter a language code (<code>en</code>, <code>fr</code>, <code>ja</code>…) and an article title, then press <strong>Load</strong>.
+    </div>
+  </main>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────
+   SVG icon strings
+──────────────────────────────────────────────────────────── */
+const SVG = {
+  share: `<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M11 2.5 L18 7.5 L11 12.5 V9.5 C5.5 9.5 2.5 12 2 17 C1.5 12 3 5 11 5.5 Z"/>
+  </svg>`,
+
+  dots: `<svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor">
+    <circle cx="2" cy="2"  r="1.5"/>
+    <circle cx="2" cy="7"  r="1.5"/>
+    <circle cx="2" cy="12" r="1.5"/>
+  </svg>`,
+
+  translate: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.119 8.47699C6.40273 8.23124 5.71877 7.89983 5.082 7.48999C6.06312 6.43622 6.74255 5.13781 7.049 3.73099H8.4V2.79999H5.117C5.08012 2.66603 5.03333 2.53501 4.977 2.40799C4.809 1.95299 4.62 1.39999 4.62 1.39999L3.591 1.74999C3.591 1.74999 3.871 2.37299 4.011 2.79999H0V3.73099H1.505C1.81174 5.14359 2.50204 6.44425 3.5 7.48999C2.41846 8.1621 1.2371 8.65827 0 8.95999C0.261333 9.34266 0.464333 9.66466 0.609 9.92599C1.89539 9.49472 3.12289 8.90449 4.263 8.16899C5.03758 8.68632 5.87501 9.10268 6.755 9.40799L7.119 8.47699ZM12.992 12.6H14L10.808 4.55699H9.485L6.3 12.586H7.266C7.36825 12.5891 7.46802 12.5542 7.546 12.488C7.61373 12.4316 7.6666 12.3595 7.7 12.278L8.4 10.5H11.9L12.551 12.299C12.5864 12.3832 12.6416 12.4577 12.712 12.516C12.7925 12.5761 12.8917 12.6058 12.992 12.6ZM10.423 6.64999L11.529 9.58299L8.778 9.58999L9.884 6.65699L10.017 6.26499C10.0637 6.11566 10.108 5.95466 10.15 5.78199C10.2247 6.07619 10.3159 6.36598 10.423 6.64999ZM5.978 3.73099H2.541C2.80772 4.91172 3.40499 5.99214 4.263 6.84599C5.1535 6.01811 5.75467 4.92619 5.978 3.73099Z" fill="#3366CC"/></svg>`,
+
+  comment: `<svg width="14" height="14" viewBox="0 0 20 20" fill="#3366CC"><path d="M3 2h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6l-4 4V3a1 1 0 0 1 1-1z"/></svg>`,
+
+  chevron: `<svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+    <path d="M7 5 L13 10 L7 15" stroke="#54595d" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+
+  history: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path d="M3.5 7 A7 7 0 1 1 3 10" stroke="#54595d" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M3.5 3 V7 H7.5"         stroke="#54595d" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M10 6.5 V10.5 L13 12.5" stroke="#54595d" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`,
+
+  extLink: `<svg width="10" height="10" viewBox="0 0 14 14" fill="none">
+    <path d="M8 1h5v5" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13 1 L6 8"  stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M6 3 H2 a1 1 0 0 0-1 1 V12 a1 1 0 0 0 1 1 H10 a1 1 0 0 0 1-1 V8"
+          stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`,
+};
+
+/* ────────────────────────────────────────────────────────────
+   Utilities
+──────────────────────────────────────────────────────────── */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(iso) {
+  if (!iso) return 'recently';
+  const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (d < 1)  return 'today';
+  if (d < 2)  return '1 day ago';
+  if (d < 30) return `${d} days ago`;
+  const mo = Math.floor(d / 30.4);
+  if (mo < 2)  return '1 month ago';
+  if (mo < 12) return `${mo} months ago`;
+  const y = Math.floor(mo / 12);
+  return y < 2 ? '1 year ago' : `${y} years ago`;
+}
+
+function isDecorative(src) {
+  if (!src) return true;
+  if (/\.svg(\?|$)/i.test(src)) return true;
+  if (/[?&](width|height)=\d{1,2}[^0-9]/i.test(src)) return true;
+  if (/1x1|pixel|blank/i.test(src)) return true;
+  const m = src.match(/\/(\d+)px-/);
+  return m ? parseInt(m[1], 10) < 100 : false;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Parse full article HTML into lead + sections
+──────────────────────────────────────────────────────────── */
+function parseArticleHTML(rawHTML) {
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(rawHTML, 'text/html');
+  const output = doc.querySelector('.mw-parser-output') ?? doc.body;
+
+  // Remove noise
+  output.querySelectorAll(
+    '.mw-editsection, .noprint, .navbox, .navigation-not-searchable, ' +
+    '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription, .toc'
+  ).forEach(el => el.remove());
+
+  // Modern Wikipedia wraps headings in <div class="mw-heading mw-heading2">
+  // Older articles use bare <h2> tags — handle both.
+  const isH2 = el =>
+    el.tagName === 'H2' ||
+    (el.tagName === 'DIV' && el.classList.contains('mw-heading2'));
+
+  const leadNodes    = [];
+  const sectionNodes = []; // [{title, nodes}]
+  let   current      = null;
+
+  for (const child of Array.from(output.children)) {
+    if (isH2(child)) {
+      // Extract the heading text, stripping edit-section spans
+      const h2 = child.querySelector('h2') ?? child;
+      h2.querySelectorAll('.mw-editsection').forEach(el => el.remove());
+      const heading = h2.innerHTML.trim();
+      current = { title: heading, nodes: [] };
+      sectionNodes.push(current);
+    } else if (current) {
+      current.nodes.push(child);
+    } else {
+      leadNodes.push(child);
+    }
+  }
+
+  // Hoist first non-empty paragraph above the infobox
+  let firstPara = '';
+  const firstParaIdx = leadNodes.findIndex(
+    n => n.tagName === 'P' && n.textContent.trim().length > 0
+  );
+  if (firstParaIdx !== -1) {
+    firstPara = leadNodes[firstParaIdx].outerHTML;
+    leadNodes.splice(firstParaIdx, 1);
+  }
+
+  const leadHTML = leadNodes.map(n => n.outerHTML).join('');
+  const sections = sectionNodes.map(s => ({
+    title: s.title,
+    html:  s.nodes.map(n => n.outerHTML).join(''),
+  }));
+
+  return { leadHTML, sections, firstPara };
+}
+
+/* ────────────────────────────────────────────────────────────
+   Image extraction from DOM nodes
+──────────────────────────────────────────────────────────── */
+function collectImages(leadHTML, sections) {
+  const parser = new DOMParser();
+  const seen   = new Set();
+  const out    = [];
+
+  const chunks = [leadHTML, ...sections.map(s => s.html)];
+
+  for (const html of chunks) {
+    if (!html) continue;
+    const doc = parser.parseFromString(html, 'text/html');
+    doc.querySelectorAll('.infobox img, table.infobox img, .sidebar img, .taxobox img').forEach(el => el.remove());
+
+    doc.querySelectorAll('img').forEach(img => {
+      let src = img.getAttribute('src') ?? '';
+      if (!src) return;
+      if (src.startsWith('//')) src = 'https:' + src;
+      if (!src.startsWith('http')) return;
+      if (isDecorative(src)) return;
+
+      const big = src.replace(/\/(\d+)px-/, '/250px-');
+      if (seen.has(big)) return;
+      seen.add(big);
+      out.push({ src: big, alt: img.getAttribute('alt') ?? '' });
+    });
+  }
+
+  return out;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Render helpers
+──────────────────────────────────────────────────────────── */
+function renderChips(langCount, commentCount) {
+  return `
+    <div class="article-chips">
+      ${langCount ? `<span class="infochip">${SVG.translate} ${langCount} language${langCount !== 1 ? 's' : ''}</span>` : ''}
+      ${commentCount ? `<span class="infochip">${SVG.comment} ${commentCount} comment${commentCount !== 1 ? 's' : ''}</span>` : ''}
+    </div>`;
+}
+
+function renderGallery(images) {
+  if (!images.length) return '';
+  const imgs = images.map(i =>
+    `<img class="gallery-img" src="${esc(i.src)}" alt="${esc(i.alt)}" loading="lazy">`
+  ).join('');
+  return `<div class="gallery-scroll"><div class="gallery-track">${imgs}</div></div>`;
+}
+
+function collectSubsections(sectionHTML) {
+  if (!sectionHTML) return [];
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(sectionHTML, 'text/html');
+  const out    = [];
+
+  // Query only the heading elements themselves — querySelectorAll finds them
+  // whether they are bare or nested inside modern mw-heading wrapper divs.
+  // Querying the wrappers *and* the headings would double-count every entry.
+  doc.body.querySelectorAll('h3, h4, h5, h6').forEach((h, idx) => {
+    h.querySelectorAll('.mw-editsection').forEach(n => n.remove());
+    const text = h.textContent.trim();
+    if (text) out.push({ type: 'subsection', text, idx });
+  });
+
+  return out;
+}
+
+function collectSectionLinks(sectionHTML) {
+  if (!sectionHTML) return [];
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(sectionHTML, 'text/html');
+
+  // Remove citations, infoboxes, navboxes so we don't pick up their links
+  doc.querySelectorAll('sup, .reference, .reflist, .infobox, table.infobox, .taxobox, .sidebar, .navbox').forEach(el => el.remove());
+
+  const seen = new Set();
+  const out  = [];
+
+  doc.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href') ?? '';
+    if (!href.startsWith('/wiki/')) return;
+    if (/^\/wiki\/(Help|Wikipedia|Special|File|Category|Template|Talk):/.test(href)) return;
+
+    const text = a.textContent.trim();
+    if (!text || /^\[\d+\]$/.test(text)) return;
+
+    const key = href.split('#')[0];
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const isItalic = !!a.closest('i, em') || !!a.querySelector('i, em');
+    out.push({ text, href: key, isItalic });
+  });
+
+  return out;
+}
+
+function renderAccordions(sections) {
+  return sections.map((sec, idx) => {
+    // Subsections come first, then regular wiki links fill any remaining space
+    const subsections = collectSubsections(sec.html);
+    const links       = collectSectionLinks(sec.html).map(l => ({ type: 'link', ...l }));
+    const items       = [...subsections, ...links];
+    const itemsAttr   = items.length > 0 ? ` data-items="${esc(JSON.stringify(items))}"` : '';
+
+    return `
+    <div class="acc-section" data-i="${idx}">
+      <div class="acc-header">
+        <button class="acc-btn" aria-expanded="false">
+          <span class="acc-chevron">${SVG.chevron}</span>
+          <div class="acc-title-group">
+            <span class="acc-title">${sec.title}</span>
+            ${items.length > 0 ? `<div class="acc-link-list"${itemsAttr}></div>` : ''}
+          </div>
+        </button>
+        <div class="acc-divider"></div>
+      </div>
+      <div class="acc-body">
+        <div class="art body">${sec.html}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function measureAndTruncateLinkLists(root) {
+  // Tag every sub-heading in each section body so we can scroll/focus to it later.
+  // tabIndex=-1 makes headings programmatically focusable without entering tab order.
+  root.querySelectorAll('.acc-section').forEach(sec => {
+    const body = sec.querySelector('.acc-body .art.body');
+    if (!body) return;
+    body.querySelectorAll('h3, h4, h5, h6').forEach((h, idx) => {
+      h.dataset.subheadIdx = idx;
+      h.tabIndex = -1;
+    });
+  });
+
+  root.querySelectorAll('.acc-link-list[data-items]').forEach(container => {
+    let items;
+    try { items = JSON.parse(container.dataset.items); } catch(_) { return; }
+    if (!items.length) return;
+
+    function buildHTML(visible, remaining) {
+      const parts = visible.map(item => {
+        if (item.type === 'subsection') {
+          return `<a href="#" data-subhead-idx="${item.idx}">${esc(item.text)}</a>`;
+        }
+        const style = item.isItalic ? ' style="font-style:italic"' : '';
+        return `<a href="${esc(item.href)}"${style}>${esc(item.text)}</a>`;
+      });
+      if (remaining > 0) parts.push(`and ${remaining} more...`);
+      return parts.join(' \u2022 ');
+    }
+
+    const twoLineH = 41; // 2 × 20px line-height + 1px tolerance
+
+    // Test if all items fit in 2 lines
+    container.innerHTML = buildHTML(items, 0);
+    if (container.scrollHeight <= twoLineH) {
+      wireAccLinks(container);
+      return;
+    }
+
+    // Binary search: find max count that fits in 2 lines
+    let lo = 1, hi = items.length - 1;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      container.innerHTML = buildHTML(items.slice(0, mid), items.length - mid);
+      if (container.scrollHeight <= twoLineH) lo = mid; else hi = mid - 1;
+    }
+    container.innerHTML = buildHTML(items.slice(0, lo), items.length - lo);
+    wireAccLinks(container);
+  });
+}
+
+function wireAccLinks(container) {
+  const sec = container.closest('.acc-section');
+
+  function openAndScroll(target, block) {
+    const wasOpen = sec && sec.classList.contains('open');
+    if (sec && !wasOpen) {
+      sec.classList.add('open');
+      sec.querySelector('.acc-btn').setAttribute('aria-expanded', 'true');
+    }
+    // Small delay when opening lets the body paint before we measure positions
+    setTimeout(() => {
+      if (block === 'center') {
+        // center is safe — the element ends up in the middle of the viewport,
+        // well clear of the sticky header at the top
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // 'start' would place the element flush at the top of the viewport,
+        // directly behind the sticky control bar + sticky section header.
+        // Measure both sticky layers and offset manually.
+        const controlBar = document.getElementById('control-bar');
+        const accHeader  = sec && sec.querySelector('.acc-header');
+        const stickyH    = (controlBar ? controlBar.offsetHeight : 0)
+                         + (accHeader  ? accHeader.offsetHeight  : 0);
+        const top = target.getBoundingClientRect().top + window.scrollY - stickyH - 12;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+      setTimeout(() => target.focus({ preventScroll: true }), 350);
+    }, wasOpen ? 0 : 50);
+  }
+
+  // Subsection heading links — scroll to the tagged <h3>/<h4>/etc. in the body
+  container.querySelectorAll('a[data-subhead-idx]').forEach(a => {
+    const idx = a.dataset.subheadIdx;
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const body   = sec && sec.querySelector('.acc-body');
+      const target = body && body.querySelector(`[data-subhead-idx="${idx}"]`);
+      if (target) openAndScroll(target, 'start');
+    });
+  });
+
+  // Wiki-link anchors — scroll to the matching link in the body
+  container.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
+    const wikiHref = a.getAttribute('href');
+    a.href = '#';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const body   = sec && sec.querySelector('.acc-body');
+      const target = body && body.querySelector(`[data-wiki-href="${CSS.escape(wikiHref)}"]`);
+      if (target) openAndScroll(target, 'center');
+    });
+  });
+}
+
+function collapseInfoboxes(root) {
+  root.querySelectorAll('.art .infobox').forEach(table => {
+    if (table.offsetHeight <= 750) return;
+
+    // Wrap the table in a collapse container
+    const wrap = document.createElement('div');
+    wrap.className = 'infobox-wrap collapsed';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+
+    // Gradient fade overlay — sits above the Read more button
+    const fade = document.createElement('div');
+    fade.className = 'infobox-fade';
+    wrap.appendChild(fade);
+
+    // Read more button — absolutely positioned at the bottom of the 500px window
+    const btn = document.createElement('button');
+    btn.className = 'infobox-read-more';
+    btn.textContent = 'Read more';
+    wrap.appendChild(btn);
+
+    btn.addEventListener('click', () => {
+      wrap.classList.remove('collapsed');
+      fade.remove();
+      btn.remove();
+    });
+  });
+}
+
+function renderRelated(pages) {
+  if (!pages?.length) return '';
+  const items = pages.slice(0, 3).map(p => {
+    const thumb = p.thumbnail?.source
+      ? `<img class="related-thumb" src="${esc(p.thumbnail.source)}" alt="" loading="lazy">`
+      : `<div class="related-thumb-ph"></div>`;
+    return `
+      <div class="related-item">
+        ${thumb}
+        <div class="related-text">
+          <div class="related-title">${p.displaytitle ?? esc(p.title ?? '')}</div>
+          ${p.description ? `<div class="related-desc">${esc(p.description)}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="foot-related">
+      <div class="foot-related-label">Related pages</div>
+      <div class="related-list">${items}</div>
+    </div>`;
+}
+
+function renderLastEdited(timestamp, user) {
+  if (!timestamp) return '';
+  const name = (user ?? '').length > 14 ? user.slice(0, 14) + '…' : (user ?? '');
+  const by   = name ? ` by ${esc(name)}` : '';
+  return `
+    <div class="foot-lastedit">
+      <span class="foot-lastedit-icon">${SVG.history}</span>
+      <span class="foot-lastedit-text">
+        <strong>Last edited ${timeAgo(timestamp)}</strong>${by}
+      </span>
+      <span class="foot-lastedit-chev">${SVG.chevron}</span>
+    </div>`;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Main render
+──────────────────────────────────────────────────────────── */
+function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML, firstPara, sections, timestamp, user, related, dir, lang }) {
+  _articleCtx = { lang, leadHTML, firstPara };
+  const root   = document.getElementById('article-root');
+  const images = collectImages(leadHTML, sections);
+
+  root.innerHTML = `
+    <div class="article-outer">
+
+      <div class="article-title-section">
+        <div class="article-title-row">
+          <h1 class="article-title">${displayTitle ?? esc(title)}</h1>
+          <div class="article-actions">
+            <button class="article-action-btn" aria-label="Share">${SVG.share}</button>
+            <button class="article-action-btn" aria-label="More">${SVG.dots}</button>
+          </div>
+        </div>
+        ${renderChips(langCount, commentCount)}
+      </div>
+
+      ${renderGallery(images)}
+
+      ${firstPara ? `<div class="art body">${firstPara}</div>` : ''}
+
+      <div class="art body">${leadHTML}</div>
+
+      <div class="acc-sections">${renderAccordions(sections)}</div>
+
+    </div>
+
+    <div class="article-footer">
+      ${renderLastEdited(timestamp, user)}
+      ${renderRelated(related)}
+      <div class="foot-generic">
+        <div class="foot-wm"><svg width="116" height="20" viewBox="0 0 116 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.2344 0.29C15.1444 0.29 15.6145 0.34 16.2345 0.34C16.8545 0.34 17.4246 0.34 18.0346 0.29C18.1804 0.56168 18.1804 0.88832 18.0346 1.16C16.7545 1.37 16.2145 2.38 15.6045 3.62L13.7544 7.31L16.9145 14.31H17.0045L21.7248 3.44C22.3148 2.01 22.2648 1.3 20.6647 1.16C20.5171 0.88878 20.5171 0.56122 20.6647 0.29C21.8248 0.29 22.5448 0.34 23.1148 0.34C23.6849 0.34 24.3049 0.34 25.2849 0.29C25.4325 0.56122 25.4325 0.88878 25.2849 1.16C23.6549 1.37 23.3748 2.38 22.8548 3.62L17.0045 17.13C16.8345 17.53 16.6845 17.74 16.4145 17.74C16.1445 17.74 15.9745 17.53 15.8445 17.13L12.5243 9.44L8.87414 17.13C8.72413 17.53 8.55413 17.74 8.28411 17.74C8.0141 17.74 7.86409 17.53 7.71409 17.13L2.34383 3.58C1.58379 1.7 1.53379 1.3 0.123719 1.17C-0.0338158 0.89962 -0.0413697 0.56726 0.103719 0.29C1.26377 0.29 1.68379 0.34 2.67384 0.34C3.66389 0.34 4.25392 0.32 5.41397 0.29C5.56159 0.56122 5.56159 0.88878 5.41397 1.16C3.8539 1.34 3.7939 1.76 4.41393 3.28L8.93414 14.28H9.00415L11.7643 8.28L9.72418 3.58C8.90414 1.7 8.70413 1.33 7.64408 1.17C7.49829 0.89832 7.49829 0.57168 7.64408 0.3C8.43412 0.3 8.85414 0.35 9.84419 0.35C10.8342 0.35 11.2043 0.35 12.0943 0.3C12.2419 0.57122 12.2419 0.89878 12.0943 1.17C11.0942 1.33 11.1543 1.78 11.8343 3.29L13.0043 6L13.1143 6.12L14.4244 3.49C15.1844 1.96 15.2844 1.37 14.2244 1.21C14.0631 0.92357 14.0669 0.57286 14.2344 0.29ZM28.5155 14.19C28.5155 16.39 28.7855 16.49 30.2955 16.6C30.4431 16.8712 30.4431 17.1988 30.2955 17.47C29.2355 17.47 28.6155 17.42 27.5555 17.42C26.4955 17.42 25.8255 17.42 24.7855 17.47C24.6397 17.1983 24.6397 16.8717 24.7855 16.6C26.2955 16.47 26.5655 16.39 26.5655 14.19V8.47C26.5655 6.27 26.2955 6.17 24.7855 6.06C24.6397 5.78832 24.6397 5.46168 24.7855 5.19C25.8455 5.19 26.4655 5.24 27.5255 5.24C28.5855 5.24 29.2555 5.24 30.2955 5.19C30.4431 5.46122 30.4431 5.78878 30.2955 6.06C28.7855 6.19 28.5155 6.27 28.5155 8.47V14.19V14.19ZM32.6354 6.06C32.4897 5.78832 32.4897 5.46168 32.6354 5.19C33.6354 5.19 34.3154 5.24 35.4054 5.24C36.3154 5.24 36.7154 5.24 37.7754 5.19C37.9212 5.46168 37.9212 5.78832 37.7754 6.06C36.5854 6.19 36.3654 6.27 36.3654 8.47V10.83C37.1754 10.83 37.9054 10.41 38.9554 9.14C40.8554 6.84 41.1054 6.14 39.8654 6.07C39.7178 5.79878 39.7178 5.47122 39.8654 5.2C40.9254 5.2 41.8654 5.25 42.5854 5.25C43.3054 5.25 43.6454 5.25 44.3154 5.2C44.4612 5.47168 44.4612 5.79832 44.3154 6.07C43.3105 6.00834 42.3344 6.41878 41.6754 7.18L39.5554 9.79C39.1354 10.27 38.9854 10.56 38.9854 10.79C39.0066 10.9603 39.084 11.1187 39.2054 11.24L42.8654 15.85C43.2764 16.2964 43.8406 16.5714 44.4454 16.62C44.5933 16.8841 44.5933 17.206 44.4454 17.47H42.5454C41.9054 17.47 41.2854 17.47 41.0154 17.52V17.1C41.0531 16.6975 40.9187 16.2979 40.6454 16L37.9054 12.39C37.5363 11.9301 36.9633 11.683 36.3754 11.73V14.19C36.3754 16.39 36.5954 16.47 37.7854 16.6C37.9312 16.8717 37.9312 17.1983 37.7854 17.47C36.7254 17.47 36.3254 17.42 35.4154 17.42C34.3254 17.42 33.6854 17.42 32.6454 17.47C32.4997 17.1983 32.4997 16.8717 32.6454 16.6C34.1554 16.47 34.4254 16.39 34.4254 14.19V8.47C34.4154 6.27 34.1454 6.19 32.6354 6.06ZM50.0058 14.19C50.0058 16.39 50.2758 16.49 51.7857 16.6C51.9333 16.8712 51.9333 17.1988 51.7857 17.47C50.7257 17.47 50.1058 17.42 49.0458 17.42C47.9858 17.42 47.3158 17.42 46.2758 17.47C46.13 17.1983 46.13 16.8717 46.2758 16.6C47.7857 16.47 48.0558 16.39 48.0558 14.19V8.47C48.0558 6.27 47.7857 6.17 46.2758 6.06C46.13 5.78832 46.13 5.46168 46.2758 5.19C47.3358 5.19 47.9558 5.24 49.0158 5.24C50.0758 5.24 50.7458 5.24 51.7857 5.19C51.9333 5.46122 51.9333 5.78878 51.7857 6.06C50.3258 6.2 50.0058 6.27 50.0058 8.47V14.19V14.19ZM59.7162 16.6C59.862 16.8717 59.862 17.1983 59.7162 17.47C58.6562 17.47 58.0362 17.42 56.9762 17.42C55.9162 17.42 55.2462 17.42 54.2062 17.47C54.0586 17.1988 54.0586 16.8712 54.2062 16.6C55.7162 16.47 55.9862 16.39 55.9862 14.19V8.47C55.9862 6.27 55.7162 6.17 54.2062 6.06C54.0586 5.78878 54.0586 5.46122 54.2062 5.19C55.2662 5.19 55.8862 5.24 56.9462 5.24C57.6162 5.24 58.6562 5.19 59.5662 5.19C63.0762 5.19 63.8162 7.04 63.8162 8.42C63.8414 9.55828 63.3864 10.6546 62.5625 11.4404C61.7386 12.2263 60.622 12.629 59.4862 12.55C58.9754 12.5529 58.4702 12.4437 58.0062 12.23V14.23C58.0062 16.39 58.2562 16.49 59.7662 16.6H59.7162ZM58.0068 11.38C58.5199 11.579 59.0665 11.6775 59.6168 11.67C61.0968 11.67 61.7468 10.67 61.7468 8.73C61.7468 6.79 60.9568 6.06 59.4968 6.06C58.3068 6.06 58.0168 6.4 58.0168 7.25L58.0068 11.38ZM69.4966 11.46V15.46C69.4966 15.96 69.8466 16.63 70.2866 16.63H72.3366C73.8966 16.63 74.6066 15.31 75.0066 13.74C75.2412 13.6675 75.4962 13.7081 75.6966 13.85C75.5118 15.0784 75.2648 16.2966 74.9566 17.5C74.9566 17.5 73.3266 17.45 72.3366 17.45H68.5066L65.7366 17.5C65.5909 17.2283 65.5909 16.9017 65.7366 16.63C67.2466 16.5 67.5166 16.42 67.5166 14.22V8.47001C67.5166 6.27001 67.2466 6.17001 65.7366 6.06001C65.5909 5.78833 65.5909 5.46169 65.7366 5.19001L68.4766 5.24001H73.5866C73.9224 5.23962 74.2574 5.20612 74.5866 5.14001C74.6366 5.14001 74.6566 5.14001 74.6566 5.22001C74.6566 5.30001 75.0066 7.47001 75.0966 8.37002C74.8918 8.48075 74.658 8.52612 74.4266 8.50001C74.0066 7.00001 73.6966 6.12001 72.1666 6.12001H70.2666C70.0603 6.09975 69.8553 6.16938 69.704 6.31108C69.5528 6.45279 69.4699 6.65283 69.4766 6.86001V10.62H70.8866C72.6166 10.62 72.5366 10.33 72.5866 9.14001C72.7977 9.00786 73.0656 9.00786 73.2766 9.14001C73.2766 9.80001 73.2766 10.28 73.2766 11.02C73.2766 11.76 73.2766 12.19 73.2766 12.95C73.0656 13.0822 72.7977 13.0822 72.5866 12.95C72.5366 11.95 72.5866 11.47 70.8866 11.47H69.4666L69.4966 11.46ZM83.8477 5.19C88.0077 5.19 90.0077 7.94 90.0077 11.46C90.0077 16.09 86.9477 17.46 84.1977 17.46C82.1977 17.46 81.3277 17.41 80.5877 17.41C79.4977 17.41 78.8577 17.41 77.8177 17.46C77.6701 17.1888 77.6701 16.8612 77.8177 16.59C79.3277 16.46 79.5977 16.38 79.5977 14.18V8.47C79.5977 6.27 79.3277 6.17 77.8177 6.06C77.6701 5.78878 77.6701 5.46122 77.8177 5.19C78.8777 5.19 79.4977 5.24 80.5577 5.24C81.0077 5.24 83.2077 5.19 83.8477 5.19ZM83.598 16.6C86.318 16.6 87.848 15.6 87.848 11.91C87.848 9.16 87.278 6.06 83.128 6.06C82.128 6.06 81.548 6.22 81.548 6.88V15.4C81.548 16.15 81.728 16.6 83.598 16.6ZM95.6984 14.19C95.6984 16.39 95.9684 16.49 97.4784 16.6C97.6241 16.8717 97.6242 17.1983 97.4784 17.47C96.4184 17.47 95.7984 17.42 94.7384 17.42C93.6784 17.42 93.0084 17.42 91.9684 17.47C91.8226 17.1983 91.8226 16.8717 91.9684 16.6C93.4784 16.47 93.7484 16.39 93.7484 14.19V8.47C93.7484 6.27 93.4784 6.17 91.9684 6.06C91.8226 5.78832 91.8226 5.46168 91.9684 5.19C93.0284 5.19 93.6484 5.24 94.7084 5.24C95.7684 5.24 96.4384 5.24 97.4784 5.19C97.6241 5.46168 97.6241 5.78832 97.4784 6.06C96.0084 6.2 95.7084 6.27 95.7084 8.47L95.6984 14.19ZM104.489 16.6C104.636 16.8712 104.636 17.1988 104.489 17.47C103.579 17.47 102.339 17.42 101.329 17.42C100.319 17.42 100.049 17.42 99.1289 17.47C98.9831 17.1983 98.9831 16.8717 99.1289 16.6C100.302 16.666 101.35 15.8688 101.599 14.72L107.099 0.95C107.379 0.24 107.569 0 107.929 0C108.289 0 108.419 0.28 108.599 0.8L113.669 15.15C114.129 16.51 114.939 16.51 115.889 16.61C116.036 16.8812 116.036 17.2088 115.889 17.48C114.979 17.48 114.089 17.43 113.069 17.43C112.049 17.43 110.749 17.43 109.829 17.48C109.683 17.2083 109.683 16.8817 109.829 16.61C111.009 16.52 112.029 16.61 111.659 15.53L110.159 11H105.009C104.419 11 104.269 11.1 104.149 11.45L102.789 15.29C102.409 16.42 103.569 16.53 104.499 16.6H104.489ZM109.748 9.92999L107.348 2.85999H107.298L104.818 9.57998C104.718 9.86998 104.888 9.92999 105.438 9.92999H109.748Z" fill="#54595D"/></svg></div>
+        <hr class="foot-hr">
+        <div class="foot-license">
+          Content is available under
+          <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC BY-SA 3.0</a>
+          ${SVG.extLink} unless otherwise noted.
+        </div>
+        <div class="foot-links">
+          <a href="#">Terms of Use</a> &nbsp;•&nbsp;
+          <a href="#">Privacy</a> &nbsp;•&nbsp;
+          <a href="#">Desktop</a>
+        </div>
+      </div>
+    </div>`;
+
+  /* Fix protocol-relative image URLs */
+  root.querySelectorAll('img[src^="//"]').forEach(img => {
+    img.src = 'https:' + img.getAttribute('src');
+  });
+
+  /* Wire up internal /wiki/ links — store original href so link-list anchoring can find them */
+  root.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
+    const t = decodeURIComponent(a.getAttribute('href').slice(6));
+    a.dataset.wikiHref = a.getAttribute('href'); // preserve for anchor look-up
+    a.href = '#';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      showPagePreview(t, a);
+    });
+  });
+
+  /* Neutralise other relative links */
+  root.querySelectorAll('a').forEach(a => {
+    const href = a.getAttribute('href') ?? '';
+    if (!href.startsWith('http') && !href.startsWith('#') && !href.startsWith('mailto:')) {
+      a.href = '#';
+      a.addEventListener('click', e => e.preventDefault());
+    }
+  });
+
+  /* Accordion toggles */
+  root.querySelectorAll('.acc-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sec  = btn.closest('.acc-section');
+      const open = sec.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open);
+    });
+  });
+
+  /* RTL */
+  root.querySelectorAll('.article-title, .art').forEach(el => { el.dir = dir ?? 'ltr'; });
+
+  /* Sticky section header offset — keeps sticky headers below the control bar */
+  const bar = document.getElementById('control-bar');
+  document.documentElement.style.setProperty('--control-bar-h', bar.offsetHeight + 'px');
+
+  /* Populate and truncate section link lists */
+  measureAndTruncateLinkLists(root);
+
+  /* Collapse tall infoboxes */
+  collapseInfoboxes(root);
+}
+
+/* ────────────────────────────────────────────────────────────
+   Page preview knowledge graph
+──────────────────────────────────────────────────────────── */
+let _articleCtx = { lang: 'en', leadHTML: '', firstPara: '' };
+
+const ppHistory = []; // { title, display } in visit order, populated on first thumbnail click
+let ppCurrentTitle = null;
+
+// ── Canvas world state ────────────────────────────────────────
+let ppFocusX = 0, ppFocusY = 0;                      // world point currently at viewport centre
+let ppPanCleanup = null;                              // removes window pan listeners on clearCanvas
+
+// ── Global loading progress ───────────────────────────────────
+let ppTasksTotal = 0, ppTasksDone = 0;
+
+function ppBeginLoad(n) {
+  ppTasksTotal += (n || 1);
+  renderGlobalProgress();
+}
+function ppEndLoad(n) {
+  ppTasksDone = Math.min(ppTasksDone + (n || 1), ppTasksTotal);
+  renderGlobalProgress();
+}
+function renderGlobalProgress() {
+  const bar = document.getElementById('pp-global-progress');
+  if (!bar) return;
+  const pct = ppTasksTotal === 0 ? 0 : Math.min(100, Math.round((ppTasksDone / ppTasksTotal) * 100));
+  bar.style.width = pct + '%';
+  if (pct >= 100) bar.classList.add('pp-progress-done');
+  else bar.classList.remove('pp-progress-done');
+}
+const ppCardMap  = new Map();  // title → { x, y, anchor }  (x,y = world centre of card)
+const ppThumbMap = new Map();  // title → { x, y, size, cardH, parentTitle, el }
+const ppAllConnections = new Set(); // every "t1|||t2" pair ever fetched
+
+async function fetchPageSummary(lang, title) {
+  const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('summary fetch failed');
+  return res.json();
+}
+
+function extractFirstSentence(extractHtml) {
+  const div = document.createElement('div');
+  div.innerHTML = extractHtml;
+  div.querySelectorAll('a').forEach(a => a.replaceWith(document.createTextNode(a.textContent)));
+  const p = div.querySelector('p');
+  const html = p ? p.innerHTML : div.innerHTML;
+  const m = html.search(/\.\s/);
+  return m === -1 ? html : html.slice(0, m + 1);
+}
+
+function collectIntroLinks(firstPara, leadHTML) {
+  const parser = new DOMParser();
+  const seen = new Set();
+  const links = [];
+  [firstPara, leadHTML].forEach((html, chunkIdx) => {
+    if (!html) return;
+    const doc = parser.parseFromString(html, 'text/html');
+    doc.querySelectorAll('sup,.reference,.reflist,.infobox,table.infobox,.taxobox,.sidebar,.navbox').forEach(el => el.remove());
+    doc.querySelectorAll('p').forEach((p, pIdx) => {
+      p.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (/\/wiki\/(Help|Wikipedia|Special|File|Category|Template|Talk):/.test(href)) return;
+        const text = a.textContent.trim();
+        if (!text || /^\[\d+\]$/.test(text)) return;
+        const t = decodeURIComponent(href.split('#')[0].slice(6));
+        if (seen.has(t)) return;
+        seen.add(t);
+        links.push({ title: t, text, paraIdx: chunkIdx * 100 + pIdx });
+      });
+    });
+  });
+  return links;
+}
+
+function scoreNode(summary) {
+  const desc = (summary.description || '').toLowerCase();
+  if (/\b(born|actor|actress|singer|musician|composer|politician|scientist|writer|poet|director|athlete|inventor|engineer|philosopher)\b/.test(desc)) return 3;
+  if (/\b(city|town|village|country|nation|state|province|region|district|island|mountain|river|lake|municipality)\b/.test(desc)) return 2;
+  if (summary.thumbnail) return 1;
+  return 0;
+}
+
+function addToHistory(title) {
+  const display = title.replace(/_/g, ' ');
+  if (ppHistory.some(h => h.title === title)) return;
+  ppHistory.push({ title, display });
+  renderHistoryBar(title);
+}
+
+function renderHistoryBar(activeTitle) {
+  let bar = document.getElementById('pp-history-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'pp-history-bar';
+    const progressEl = document.createElement('div');
+    progressEl.id = 'pp-global-progress';
+    bar.appendChild(progressEl);
+    document.body.appendChild(bar);
+  }
+  // Remove only chips — preserve the progress bar element
+  bar.querySelectorAll('.pp-chip').forEach(c => c.remove());
+  ppHistory.forEach(h => {
+    const chip = document.createElement('div');
+    chip.className = 'pp-chip' + (h.title === activeTitle ? ' pp-chip-active' : '');
+    chip.textContent = h.display;
+    chip.title = h.display;
+    chip.addEventListener('click', () => showPagePreview(h.title, chip, true));
+    bar.appendChild(chip);
+  });
+  requestAnimationFrame(() => { bar.scrollLeft = bar.scrollWidth; });
+}
+
+// ── Canvas management ─────────────────────────────────────────
+
+function ensureCanvas() {
+  if (document.getElementById('pp-canvas')) return;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'pp-backdrop';
+
+  // ── Pan-by-drag (mouse + touch) ──────────────────────────────
+  let dragging = false, startX = 0, startY = 0, focusX0 = 0, focusY0 = 0;
+
+  const beginDrag = (cx, cy) => {
+    dragging = true;
+    startX = cx; startY = cy;
+    focusX0 = ppFocusX; focusY0 = ppFocusY;
+    backdrop.classList.add('pp-dragging');
+  };
+  const moveDrag = (cx, cy) => {
+    if (!dragging) return;
+    ppFocusX = focusX0 - (cx - startX);
+    ppFocusY = focusY0 - (cy - startY);
+    applyCanvasTransform(false);
+  };
+  const endDrag = () => { dragging = false; backdrop.classList.remove('pp-dragging'); };
+
+  backdrop.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    beginDrag(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  backdrop.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+    e.preventDefault();
+  }, { passive: false });
+
+  const onMouseMove  = e => moveDrag(e.clientX, e.clientY);
+  const onTouchMove  = e => { if (e.touches.length === 1) { moveDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } };
+  const onMouseUp    = () => endDrag();
+  const onTouchEnd   = () => endDrag();
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup',   onMouseUp);
+  window.addEventListener('touchmove', onTouchMove, { passive: false });
+  window.addEventListener('touchend',  onTouchEnd);
+
+  ppPanCleanup = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup',   onMouseUp);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend',  onTouchEnd);
+  };
+  // ─────────────────────────────────────────────────────────────
+
+  document.body.appendChild(backdrop);
+  const canvas = document.createElement('div');
+  canvas.id = 'pp-canvas';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'pp-graph';
+  canvas.appendChild(svg);
+  document.body.appendChild(canvas);
+
+  // Ensure history bar exists with global progress bar from the start
+  if (!document.getElementById('pp-history-bar')) {
+    const bar = document.createElement('div');
+    bar.id = 'pp-history-bar';
+    const progressEl = document.createElement('div');
+    progressEl.id = 'pp-global-progress';
+    bar.appendChild(progressEl);
+    document.body.appendChild(bar);
+  }
+}
+
+function applyCanvasTransform(animate) {
+  const canvas = document.getElementById('pp-canvas');
+  if (!canvas) return;
+  const vpW = window.innerWidth, vpH = window.innerHeight;
+  if (animate) {
+    canvas.classList.add('pp-panning');
+    canvas.addEventListener('transitionend', () => canvas.classList.remove('pp-panning'), { once: true });
+  } else {
+    canvas.classList.remove('pp-panning');
+  }
+  canvas.style.transform = `translate(${vpW / 2 - ppFocusX}px, ${vpH / 2 - ppFocusY}px)`;
+}
+
+function panTo(wx, wy) {
+  ppFocusX = wx; ppFocusY = wy;
+  applyCanvasTransform(true);
+}
+
+function clearCanvas() {
+  ppPanCleanup?.(); ppPanCleanup = null;
+  document.getElementById('pp-backdrop')?.remove();
+  document.getElementById('pp-canvas')?.remove();
+  ppCardMap.clear();
+  ppThumbMap.clear();
+  ppAllConnections.clear();
+  ppFocusX = 0; ppFocusY = 0;
+  ppTasksTotal = 0; ppTasksDone = 0;
+  document.querySelectorAll('a.pp-active-link').forEach(a => a.classList.remove('pp-active-link'));
+}
+
+function closePagePreview() { clearCanvas(); }
+
+function removeCard(title) {
+  const entry = ppCardMap.get(title);
+  if (!entry) return;
+  entry.anchor.remove();
+  ppCardMap.delete(title);
+  for (const [t, thumb] of ppThumbMap) {
+    if (thumb.parentTitle === title) { thumb.el.remove(); ppThumbMap.delete(t); }
+  }
+  redrawAllLines();
+  if (ppCardMap.size === 0) clearCanvas();
+}
+
+function redrawAllLines() {
+  const svg = document.getElementById('pp-graph');
+  if (!svg) return;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const addLine = (x1, y1, x2, y2, stroke = '#3366cc', width = 1, opacity = 0.65) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', stroke);
+    line.setAttribute('stroke-width', width);
+    line.setAttribute('opacity', opacity);
+    svg.appendChild(line);
+  };
+
+  const norm = t => t.toLowerCase().replace(/_/g, ' ');
+  const connected = (a, b) => ppAllConnections.has([norm(a), norm(b)].sort().join('|||'));
+
+  // Only draw lines to/from thumbs that have fully bloomed (visible on canvas)
+  const bloomedThumbs = new Map([...ppThumbMap].filter(([, t]) => t.bloomed));
+  // Only draw lines to/from cards that have finished their expansion animation
+  const settledCards  = new Map([...ppCardMap].filter(([, c]) => !c.animating));
+
+  // Card → its bloomed thumb nodes
+  for (const [, thumb] of bloomedThumbs) {
+    const pc = settledCards.get(thumb.parentTitle);
+    if (!pc) continue;
+    addLine(pc.x, pc.y, thumb.x + thumb.size / 2, thumb.y + thumb.cardH / 2);
+  }
+
+  // Thumb ↔ thumb within same parent (Wikipedia-connected, both bloomed)
+  const byParent = new Map();
+  for (const [t, thumb] of bloomedThumbs) {
+    if (!settledCards.has(thumb.parentTitle)) continue;
+    const arr = byParent.get(thumb.parentTitle) || [];
+    arr.push({ t, thumb }); byParent.set(thumb.parentTitle, arr);
+  }
+  for (const thumbs of byParent.values()) {
+    for (let i = 0; i < thumbs.length - 1; i++)
+      for (let j = i + 1; j < thumbs.length; j++) {
+        if (!connected(thumbs[i].t, thumbs[j].t)) continue;
+        const a = thumbs[i].thumb, b = thumbs[j].thumb;
+        addLine(a.x + a.size/2, a.y + a.cardH/2, b.x + b.size/2, b.y + b.cardH/2);
+      }
+  }
+
+  // Card ↔ card (settled cards only)
+  const cardTitles = [...settledCards.keys()];
+  for (let i = 0; i < cardTitles.length - 1; i++)
+    for (let j = i + 1; j < cardTitles.length; j++) {
+      if (!connected(cardTitles[i], cardTitles[j])) continue;
+      const c1 = settledCards.get(cardTitles[i]), c2 = settledCards.get(cardTitles[j]);
+      addLine(c1.x, c1.y, c2.x, c2.y, '#3366cc', 2, 0.85);
+    }
+
+  // Settled card ↔ bloomed thumb of a different settled card
+  for (const [thumbTitle, thumb] of bloomedThumbs)
+    for (const [cardTitle, card] of settledCards) {
+      if (cardTitle === thumb.parentTitle) continue;
+      if (!connected(thumbTitle, cardTitle)) continue;
+      addLine(card.x, card.y, thumb.x + thumb.size/2, thumb.y + thumb.cardH/2, '#3366cc', 1, 0.45);
+    }
+}
+
+// ── Collision detection helpers ───────────────────────────────
+
+const CARD_W = 277, CARD_H_EST = 380;
+
+function rectsOverlap(a, b, pad) {
+  pad = pad || 0;
+  return !(a.x + a.w + pad <= b.x || b.x + b.w + pad <= a.x ||
+           a.y + a.h + pad <= b.y || b.y + b.h + pad <= a.y);
+}
+
+// Returns world-space bounding rects for all cards + thumbs,
+// optionally excluding one card title (the one being placed).
+function getOccupiedRects(excludeCardTitle) {
+  const rects = [];
+  for (const [t, c] of ppCardMap) {
+    if (t === excludeCardTitle) continue;
+    rects.push({ x: c.x - CARD_W / 2, y: c.y - CARD_H_EST / 2, w: CARD_W, h: CARD_H_EST });
+  }
+  for (const [, th] of ppThumbMap) {
+    rects.push({ x: th.x, y: th.y, w: th.size, h: th.cardH });
+  }
+  return rects;
+}
+
+// Finds nearest free world position for a new card.
+function findFreeCardPos(preferX, preferY, excludeTitle) {
+  const PAD = 20;
+  const cw = CARD_W + PAD, ch = CARD_H_EST + PAD;
+  const existing = getOccupiedRects(excludeTitle);
+  const tryPos = (cx, cy) => {
+    const r = { x: cx - CARD_W / 2, y: cy - CARD_H_EST / 2, w: CARD_W, h: CARD_H_EST };
+    return !existing.some(e => rectsOverlap(r, e, PAD));
+  };
+  if (tryPos(preferX, preferY)) return { wx: preferX, wy: preferY };
+  for (let ring = 1; ring <= 8; ring++) {
+    const candidates = [
+      [ring * cw, 0], [-ring * cw, 0],
+      [0, ring * ch], [0, -ring * ch],
+      [ring * cw, ring * ch], [-ring * cw, ring * ch],
+      [ring * cw, -ring * ch], [-ring * cw, -ring * ch],
+    ];
+    for (const [dx, dy] of candidates) {
+      if (tryPos(preferX + dx, preferY + dy)) return { wx: preferX + dx, wy: preferY + dy };
+    }
+  }
+  return { wx: preferX, wy: preferY };
+}
+
+// ── Open a single card at world position (wx, wy) ─────────────
+
+// fromThumb: { x, y, size, cardH } world bbox of the thumbnail being expanded, or null
+function openCard(title, wx, wy, lang, fromThumb) {
+  if (ppCardMap.has(title)) { panTo(ppCardMap.get(title).x, ppCardMap.get(title).y); return; }
+
+  const canvas = document.getElementById('pp-canvas');
+  if (!canvas) return;
+  const wikiUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+
+  const anchor = document.createElement('div');
+  anchor.className = 'pp-card-anchor';
+  anchor.style.left = wx + 'px';
+  anchor.style.top  = wy + 'px';
+
+  const card = document.createElement('div');
+  card.className = 'pp-card';
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-label', 'Article preview');
+  card.innerHTML = `
+    <button class="pp-close-btn" aria-label="Close preview">&#x2715;</button>
+    <div class="pp-card-body">
+      <div class="pp-card-quote">
+        <svg class="pp-quote-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.3 5.40001L7.2 3.60001H5.4C3.411 3.60001 1.8 6.11101 1.8 8.10001V14.4H8.1V8.10001H4.5C4.5 5.40001 6.3 5.40001 6.3 5.40001ZM12.6 8.10001C12.6 5.40001 14.4 5.40001 14.4 5.40001L15.3 3.60001H13.5C11.511 3.60001 9.9 6.11101 9.9 8.10001V14.4H16.2V8.10001H12.6Z" fill="#54595D"/></svg>
+        <div class="pp-card-text">Loading\u2026</div>
+      </div>
+    </div>
+    <div class="pp-readmore-row">
+      <a class="pp-readmore" href="${wikiUrl}" target="_blank" rel="noopener">
+        Read more
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+          <path d="M8 1h5v5" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 1 L6 8" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 3 H2 a1 1 0 0 0-1 1 V12 a1 1 0 0 0 1 1 H10 a1 1 0 0 0 1-1 V8" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>`;
+
+  if (fromThumb) {
+    // Anchor sits at final world pos; offset it to start above the thumbnail
+    const thumbCX = fromThumb.x + fromThumb.size / 2;
+    const thumbCY = fromThumb.y + fromThumb.cardH / 2;
+    anchor.style.transform = `translate(${thumbCX - wx}px, ${thumbCY - wy}px)`;
+    const scaleStart = Math.max(0.05, fromThumb.size / CARD_W);
+    card.style.cssText += `animation:none; transform:translate(-50%,-50%) scale(${scaleStart}); opacity:0;`;
+    anchor.appendChild(card);
+    canvas.appendChild(anchor);
+    // Mark animating so redrawAllLines skips this card until it settles
+    ppCardMap.set(title, { x: wx, y: wy, anchor, animating: true });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      anchor.style.transition = 'transform 0.52s cubic-bezier(0.4,0,0.2,1)';
+      anchor.style.transform  = 'translate(0,0)';
+      card.style.transition   = 'transform 0.52s cubic-bezier(0.34,1.06,0.64,1), opacity 0.22s ease-out';
+      card.style.transform    = 'translate(-50%,-50%) scale(1)';
+      card.style.opacity      = '1';
+      card.addEventListener('transitionend', () => {
+        card.style.transition = '';
+        anchor.style.transition = '';
+        const entry = ppCardMap.get(title);
+        if (entry) { entry.animating = false; redrawAllLines(); }
+      }, { once: true });
+    }));
+  } else {
+    anchor.appendChild(card);
+    canvas.appendChild(anchor);
+    ppCardMap.set(title, { x: wx, y: wy, anchor, animating: false });
+  }
+
+  card.querySelector('.pp-close-btn').addEventListener('click', () => removeCard(title));
+
+  // Count this card's loading tasks globally: 1 summary + intro links batch + 1 connections fetch
+  ppBeginLoad(2); // summary + connections; node batch added after intro links resolve
+
+  // Populate card content; keep the promise so thumbs can wait on it.
+  // Use then(ok, err) — NOT .then().catch() — so errors thrown inside the ok
+  // handler don't fall into the error branch and falsely show "Preview unavailable."
+  const summaryReady = fetchPageSummary(lang, title).then(
+    data => {
+      if (!document.contains(card)) return;
+      try {
+        if (data?.thumbnail?.source) {
+          const imgWrap = document.createElement('div');
+          imgWrap.className = 'pp-card-img-wrap';
+          const img = document.createElement('img');
+          img.className = 'pp-card-img';
+          img.src = data.thumbnail.source; img.alt = '';
+          imgWrap.appendChild(img);
+          const body = card.querySelector('.pp-card-body');
+          body?.insertBefore(imgWrap, card.querySelector('.pp-card-quote'));
+        }
+        const textEl = card.querySelector('.pp-card-text');
+        if (textEl) {
+          if (data?.extract_html) {
+            textEl.innerHTML = extractFirstSentence(data.extract_html);
+          } else if (data?.extract) {
+            const safe = data.extract.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            const t = title.replace(/_/g,' ').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+            textEl.innerHTML = (safe.replace(/\.\s[\s\S]*/,'.') || safe).replace(new RegExp(t), '<b>$&</b>');
+          }
+        }
+      } catch (_) { /* DOM error — don't show "Preview unavailable." */ }
+      ppEndLoad(1);
+    },
+    () => {
+      // Only real fetch/HTTP failures reach here
+      if (document.contains(card)) {
+        const textEl = card.querySelector('.pp-card-text');
+        if (textEl) textEl.textContent = 'Preview unavailable.';
+      }
+      ppEndLoad(1);
+    }
+  );
+
+  // Build knowledge graph — wait for summary before blooming thumbs
+  fetchArticleIntroLinks(lang, title).then(introLinks => {
+    const nodeCount = Math.min(30, introLinks.length);
+    ppBeginLoad(nodeCount); // register each node summary as a task
+    return Promise.allSettled(
+      introLinks.slice(0, 30).map(lnk =>
+        fetchPageSummary(lang, lnk.title)
+          .then(s => { ppEndLoad(1); return { ...lnk, summary: s }; })
+          .catch(() => { ppEndLoad(1); return null; })
+      )
+    );
+  }).then(async results => {
+    // Card content must be visible AND card animation must be done before thumbnails appear
+    await summaryReady;
+    if (!document.contains(card)) return;
+    const animEntry = ppCardMap.get(title);
+    if (animEntry?.animating) {
+      await new Promise(resolve => card.addEventListener('transitionend', resolve, { once: true }));
+    }
+    if (!document.contains(card)) return;
+    const nodes = results
+      .filter(r => r.status === 'fulfilled' && r.value?.summary?.thumbnail)
+      .map(r => r.value)
+      .sort((a, b) => scoreNode(b.summary) - scoreNode(a.summary))
+      .slice(0, 16);
+    // Always fetch connections — even with no thumbnails, card-to-card lines still need it
+    const nodeTitles = nodes.map(n => n.summary.title || n.title);
+    const allTitles  = [...new Set([...nodeTitles, ...ppCardMap.keys(), ...ppThumbMap.keys()])];
+    const conns = await fetchNodeConnections(lang, allTitles);
+    conns.forEach(c => ppAllConnections.add(c));
+    ppEndLoad(1); // connections done
+    if (!document.contains(card)) return;
+    // Draw card-to-card lines immediately (don't wait for thumb bloom)
+    redrawAllLines();
+    if (!nodes.length) return;
+    requestAnimationFrame(() => {
+      if (!document.contains(card)) return;
+      renderThumbNodes(nodes, wx, wy, title);
+    });
+  }).catch(() => { ppEndLoad(1); });
+}
+
+// ── Show / navigate preview ───────────────────────────────────
+
+function showPagePreview(title, anchorEl, fromHistory = false) {
+  const fromThumbnail = anchorEl?.classList.contains('pp-node');
+
+  if (fromThumbnail) {
+    if (ppHistory.length === 0 && ppCurrentTitle) addToHistory(ppCurrentTitle);
+    addToHistory(title);
+  }
+  ppCurrentTitle = title;
+  if (ppHistory.length > 0) renderHistoryBar(title);
+
+  const lang = (document.getElementById('lang-input').value.trim() || 'en').toLowerCase();
+
+  if (!fromThumbnail) {
+    // Article link or chip: if card already open pan to it, else reset canvas
+    if (fromHistory && ppCardMap.has(title)) { panTo(ppCardMap.get(title).x, ppCardMap.get(title).y); return; }
+    clearCanvas();
+    ensureCanvas();
+    ppFocusX = 0; ppFocusY = 0;
+    applyCanvasTransform(false);
+    anchorEl?.classList.add('pp-active-link');
+    openCard(title, 0, 0, lang);
+  } else {
+    // Thumbnail click: expand thumb into new card, leave existing cards intact
+    ensureCanvas();
+    const thumb = ppThumbMap.get(title);
+    let wx = ppFocusX, wy = ppFocusY;
+    let fromThumbData = null;
+
+    if (thumb) {
+      wx = thumb.x + thumb.size / 2;
+      wy = thumb.y + thumb.cardH / 2;
+      // Push further from parent card for breathing room
+      const pc = ppCardMap.get(thumb.parentTitle);
+      if (pc) {
+        const dx = wx - pc.x, dy = wy - pc.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 0) { wx += (dx / dist) * 80; wy += (dy / dist) * 80; }
+      }
+      // Capture for expansion animation, then remove from map so collision check ignores it
+      fromThumbData = { x: thumb.x, y: thumb.y, size: thumb.size, cardH: thumb.cardH };
+      const thumbEl = thumb.el;
+      ppThumbMap.delete(title);
+      // Remove stale thumb line immediately now that it's out of ppThumbMap
+      redrawAllLines();
+      // Fade thumb el out
+      thumbEl.style.transition = 'opacity 0.38s ease-out';
+      thumbEl.style.opacity = '0';
+      setTimeout(() => { thumbEl.remove(); }, 400);
+    }
+
+    // Nudge to a free position that doesn't overlap existing cards/thumbs
+    const free = findFreeCardPos(wx, wy, title);
+    wx = free.wx; wy = free.wy;
+
+    panTo(wx, wy);
+    openCard(title, wx, wy, lang, fromThumbData);
+  }
+}
+
+async function fetchNodeConnections(lang, titles) {
+  if (titles.length < 2) return new Set();
+  const api = `https://${lang}.wikipedia.org/w/api.php`;
+  const enc = titles.slice(0, 50).map(encodeURIComponent).join('|');
+  const res = await fetch(`${api}?action=query&prop=links&titles=${enc}&pllimit=500&format=json&origin=*`).catch(() => null);
+  if (!res?.ok) return new Set();
+  const data = await res.json().catch(() => null);
+  if (!data?.query?.pages) return new Set();
+  const titleSet = new Set(titles.map(t => t.toLowerCase().replace(/_/g, ' ')));
+  const connections = new Set();
+  for (const page of Object.values(data.query.pages)) {
+    if (!page.links) continue;
+    const from = page.title.toLowerCase();
+    for (const lnk of page.links) {
+      const to = lnk.title.toLowerCase();
+      if (titleSet.has(to) && from !== to)
+        connections.add([from, to].sort().join('|||'));
+    }
+  }
+  return connections;
+}
+
+async function fetchArticleIntroLinks(lang, title) {
+  const api = `https://${lang}.wikipedia.org/w/api.php`;
+  const res = await fetch(`${api}?action=parse&page=${encodeURIComponent(title)}&prop=text&section=0&format=json&origin=*`);
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => null);
+  const rawHTML = data?.parse?.text?.['*'];
+  if (!rawHTML) return [];
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawHTML, 'text/html');
+  const output = doc.querySelector('.mw-parser-output') || doc.body;
+  output.querySelectorAll('sup,.reference,.reflist,.infobox,table.infobox,.taxobox,.sidebar,.navbox,.mw-editsection').forEach(el => el.remove());
+
+  const seen = new Set();
+  const links = [];
+  Array.from(output.querySelectorAll('p')).filter(p => p.textContent.trim()).forEach((p, pIdx) => {
+    p.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (/\/wiki\/(Help|Wikipedia|Special|File|Category|Template|Talk):/.test(href)) return;
+      const text = a.textContent.trim();
+      if (!text || /^\[\d+\]$/.test(text)) return;
+      const t = decodeURIComponent(href.split('#')[0].slice(6));
+      if (seen.has(t)) return;
+      seen.add(t);
+      links.push({ title: t, text, paraIdx: pIdx });
+    });
+  });
+  return links;
+}
+
+function renderThumbNodes(nodes, wx, wy, parentTitle) {
+  const canvas = document.getElementById('pp-canvas');
+  if (!canvas) return;
+
+  const MIN_SIZE   = 70;
+  const CAPTION_H  = 30;
+  const GAP        = 8;
+  const BAND_W     = 700;
+  const BAND_H     = 210;
+  const CARD_H_EST = 380;
+
+  // World-space bands above and below the card
+  const xMin    = wx - BAND_W / 2;
+  const topZone = { y1: wy - CARD_H_EST / 2 - GAP - BAND_H, y2: wy - CARD_H_EST / 2 - GAP };
+  const botZone = { y1: wy + CARD_H_EST / 2 + GAP,          y2: wy + CARD_H_EST / 2 + GAP + BAND_H };
+
+  // Skip nodes already visible on canvas
+  const filtered = nodes.filter(n => {
+    const nt = n.summary?.title || n.title || '';
+    return nt && !ppCardMap.has(nt) && !ppThumbMap.has(nt);
+  });
+  if (!filtered.length) return;
+
+  const maxPerBand = Math.max(1, Math.floor(BAND_W / (MIN_SIZE + GAP)));
+  const topCount   = Math.min(Math.ceil(filtered.length / 2), maxPerBand);
+  const botCount   = Math.min(filtered.length - topCount, maxPerBand);
+  const shown      = filtered.slice(0, topCount + botCount);
+
+  const topSlotW = topCount > 0 ? BAND_W / topCount : Infinity;
+  const botSlotW = botCount > 0 ? BAND_W / botCount : Infinity;
+  const sizeByW  = Math.min(topSlotW, botSlotW) - GAP;
+  const sizeByH  = Math.min(
+    topCount > 0 ? BAND_H - CAPTION_H - GAP : Infinity,
+    botCount > 0 ? BAND_H - CAPTION_H - GAP : Infinity
+  );
+  const size  = Math.max(MIN_SIZE, Math.min(160, Math.floor(sizeByW), Math.floor(sizeByH)));
+  const cardH = size + CAPTION_H;
+
+  const Y_FRACS = [0.10, 0.55, 0.20, 0.70, 0.35, 0.80, 0.05, 0.60];
+  const rawPositions = [];
+
+  const placeInBand = (n, zone, slotW, offset) => {
+    if (n === 0) return;
+    const yRange = Math.max(0, BAND_H - cardH);
+    for (let i = 0; i < n; i++) {
+      const cx = xMin + (i + 0.5) * slotW;
+      rawPositions.push({
+        x: Math.round(cx - size / 2),
+        y: Math.round(zone.y1 + Y_FRACS[i % 8] * yRange),
+        node: shown[offset + i]
+      });
+    }
+  };
+
+  placeInBand(topCount, topZone, topSlotW, 0);
+  placeInBand(botCount, botZone, botSlotW, topCount);
+
+  // Collision-filter: avoid all existing cards and thumbs; spiral outward to find free slot
+  const CPAD = 8;
+  const existingRects = getOccupiedRects(parentTitle);
+  const placedRects   = [];
+  const positions     = [];
+
+  const fitsAt = (rx, ry) => {
+    const r = { x: rx, y: ry, w: size, h: cardH };
+    return !existingRects.some(e => rectsOverlap(r, e, CPAD)) &&
+           !placedRects.some(e =>   rectsOverlap(r, e, CPAD));
+  };
+
+  for (const pos of rawPositions) {
+    let { x, y } = pos;
+    if (fitsAt(x, y)) {
+      positions.push({ ...pos, x, y });
+      placedRects.push({ x, y, w: size, h: cardH });
+      continue;
+    }
+    // Spiral outward from preferred position until a free cell is found
+    const step = size + CPAD;
+    let placed = false;
+    outer: for (let ring = 1; ring <= 14; ring++) {
+      for (let si = -ring; si <= ring; si++) {
+        for (let sj = -ring; sj <= ring; sj++) {
+          if (Math.abs(si) !== ring && Math.abs(sj) !== ring) continue; // perimeter only
+          const nx = Math.round(x + si * step);
+          const ny = Math.round(y + sj * step);
+          if (fitsAt(nx, ny)) {
+            positions.push({ ...pos, x: nx, y: ny });
+            placedRects.push({ x: nx, y: ny, w: size, h: cardH });
+            placed = true;
+            break outer;
+          }
+        }
+      }
+    }
+    // If no free slot found in 14 rings, skip node
+  }
+
+  const BLOOM_DUR  = 420;
+  const BLOOM_STAG = 55;
+  const ROTS = [-5, 4, -3, 6, -7, 3, -4, 5];
+
+  positions.forEach(({ x, y, node }, idx) => {
+    const nodeTitle = node.summary?.title || node.title || '';
+    if (!nodeTitle || ppCardMap.has(nodeTitle) || ppThumbMap.has(nodeTitle)) return;
+
+    const el = document.createElement('div');
+    const seen = ppHistory.some(h =>
+      h.title === nodeTitle ||
+      h.title === nodeTitle.replace(/ /g, '_') ||
+      h.title.replace(/_/g, ' ') === nodeTitle
+    );
+    el.className = 'pp-node' + (seen ? ' pp-node-seen' : '');
+    el.style.cssText = `left:${x}px;top:${y}px;width:${size}px;`;
+    el.style.transformOrigin = `${size / 2}px ${cardH / 2}px`;
+    el.style.setProperty('--bloom-rot', `${ROTS[idx % 8]}deg`);
+
+    const img = document.createElement('img');
+    img.alt = '';
+    img.style.height = `${size}px`;
+
+    const caption = document.createElement('div');
+    caption.className = 'pp-caption';
+    caption.textContent = nodeTitle.replace(/_/g, ' ');
+
+    el.appendChild(img);
+    el.appendChild(caption);
+    canvas.appendChild(el);
+
+    // Register in world map (bloomed=false until image loads + animation fires)
+    ppThumbMap.set(nodeTitle, { x, y, size, cardH, parentTitle, el, bloomed: false });
+
+    const delay = idx * BLOOM_STAG;
+    const bloom = () => {
+      el.style.animation = `pp-bloom ${BLOOM_DUR}ms cubic-bezier(0.34,1.2,0.64,1) ${delay}ms forwards`;
+      // Mark bloomed and immediately redraw lines so connectors appear as each thumb settles
+      el.addEventListener('animationend', () => {
+        const entry = ppThumbMap.get(nodeTitle);
+        if (entry) {
+          entry.bloomed = true;
+          if (document.getElementById('pp-canvas')) redrawAllLines();
+        }
+      }, { once: true });
+    };
+    img.addEventListener('load', bloom);
+    img.addEventListener('error', () => { el.remove(); ppThumbMap.delete(nodeTitle); });
+    img.src = node.summary.thumbnail.source;
+    if (img.complete && img.naturalWidth) bloom();
+
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => showPagePreview(nodeTitle, el));
+  });
+
+}
+
+/* ────────────────────────────────────────────────────────────
+   Fetch & load  (uses MediaWiki Action API — CORS-safe)
+──────────────────────────────────────────────────────────── */
+async function loadArticle() {
+  const lang  = (document.getElementById('lang-input').value.trim() || 'en').toLowerCase();
+  const raw   = document.getElementById('article-input').value.trim();
+  if (!raw) return;
+
+  const title  = raw.replace(/ /g, '_');
+  const root   = document.getElementById('article-root');
+  const status = document.getElementById('status-text');
+
+  root.innerHTML = '<div class="state-loading">Loading…</div>';
+  status.textContent = '';
+  ppHistory.length = 0;
+  ppCurrentTitle = null;
+  document.getElementById('pp-history-bar')?.remove();
+  closePagePreview();
+
+  const api = `https://${lang}.wikipedia.org/w/api.php`;
+  const enc = encodeURIComponent(title);
+
+  try {
+    // Fetch article HTML + metadata in parallel
+    const [parseRes, metaRes, relRes, talkRes] = await Promise.allSettled([
+      fetch(`${api}?action=parse&page=${enc}&prop=text|langlinks|displaytitle&format=json&origin=*`).then(r => r.json()),
+      fetch(`${api}?action=query&prop=revisions|pageprops&titles=${enc}&rvprop=timestamp|user&rvlimit=1&format=json&origin=*`).then(r => r.json()),
+      fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/related/${enc}`).then(r => r.ok ? r.json() : { pages: [] }).catch(() => ({ pages: [] })),
+      fetch(`${api}?action=parse&page=Talk:${enc}&prop=sections&format=json&origin=*`).then(r => r.json()).catch(() => null),
+    ]);
+
+    if (parseRes.status === 'rejected') throw new Error('Network error');
+    const parseData = parseRes.value;
+    if (parseData.error) throw new Error(parseData.error.info ?? 'Article not found');
+
+    const p          = parseData.parse;
+    // Rewrite protocol-relative URLs so images load over both http:// and file://
+    const rawHTML    = p.text['*'].replace(/\/\/upload\.wikimedia\.org/g, 'https://upload.wikimedia.org');
+    const langCount  = p.langlinks?.length ?? 0;
+    const displayTitle = p.displaytitle ?? title;
+
+    // Metadata
+    let timestamp = null, user = null, dir = 'ltr';
+    if (metaRes.status === 'fulfilled') {
+      const page = Object.values(metaRes.value?.query?.pages ?? {})[0];
+      timestamp  = page?.revisions?.[0]?.timestamp ?? null;
+      user       = page?.revisions?.[0]?.user ?? null;
+      dir        = page?.pagelanguagehtmlcode === 'ar' ? 'rtl' : (page?.pageprops?.['wgPageContentLanguage'] ?? 'ltr');
+    }
+
+    // Detect RTL from lang code
+    const rtlLangs = ['ar','he','fa','ur','yi','ckb','ps','sd','ug'];
+    if (rtlLangs.includes(lang)) dir = 'rtl';
+
+    // Related pages
+    const related = relRes.status === 'fulfilled' ? (relRes.value?.pages ?? []) : [];
+
+    // Talk page comment count (number of top-level sections on Talk page)
+    const commentCount = talkRes.status === 'fulfilled'
+      ? (talkRes.value?.parse?.sections?.length ?? 0)
+      : 0;
+
+    // Parse HTML into lead + sections
+    const { leadHTML, firstPara, sections } = parseArticleHTML(rawHTML);
+
+    renderArticle({ title, displayTitle, langCount, commentCount, leadHTML, firstPara, sections, timestamp, user, related, dir, lang });
+    status.textContent = `✓ ${title.replace(/_/g, ' ')}`;
+
+  } catch (err) {
+    root.innerHTML = `
+      <div class="state-error">
+        <strong>Could not load article</strong><br>
+        ${esc(err.message)}<br><br>
+        <small>Check the language code and article title.<br>
+        (Example: lang <code>en</code>, title <code>Hedy_Lamarr</code>)</small>
+      </div>`;
+    status.textContent = '✗ error';
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Event wiring
+──────────────────────────────────────────────────────────── */
+document.getElementById('load-btn').addEventListener('click', loadArticle);
+document.getElementById('article-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadArticle();
+});
+
+// Pick a random article from the vital articles list on each page load
+const VITAL_ARTICLES = [
+  // Philosophers
+  'Aristotle', 'Plato', 'Socrates', 'Immanuel_Kant', 'Karl_Marx', 'Friedrich_Nietzsche',
+  'John_Locke', 'Simone_de_Beauvoir', 'René_Descartes', 'Voltaire', 'Adam_Smith',
+  'Sigmund_Freud', 'Georg_Wilhelm_Friedrich_Hegel', 'Ludwig_Wittgenstein', 'Jean-Paul_Sartre',
+  // Religious figures
+  'Jesus', 'Muhammad', 'Gautama_Buddha', 'Thomas_Aquinas', 'Martin_Luther',
+  // Political leaders
+  'Alexander_the_Great', 'Julius_Caesar', 'Napoleon', 'Winston_Churchill',
+  'Abraham_Lincoln', 'Genghis_Khan', 'Mahatma_Gandhi', 'Nelson_Mandela',
+  'Mao_Zedong', 'George_Washington', 'Elizabeth_I', 'Louis_XIV', 'Saladin',
+  'Ashoka', 'Akbar', 'Charlemagne', 'Cyrus_the_Great', 'Qin_Shi_Huang',
+  // Scientists & inventors
+  'Albert_Einstein', 'Isaac_Newton', 'Charles_Darwin', 'Marie_Curie',
+  'Nikola_Tesla', 'Galileo_Galilei', 'Alan_Turing', 'Archimedes',
+  'Johannes_Kepler', 'Michael_Faraday', 'James_Clerk_Maxwell', 'Dmitri_Mendeleev',
+  'Louis_Pasteur', 'Leonhard_Euler', 'Carl_Friedrich_Gauss', 'Euclid',
+  'Johannes_Gutenberg', 'Tim_Berners-Lee',
+  // Artists
+  'Leonardo_da_Vinci', 'Michelangelo', 'Vincent_van_Gogh', 'Pablo_Picasso',
+  'Frida_Kahlo', 'Rembrandt', 'Andy_Warhol', 'Francisco_Goya',
+  'Salvador_Dalí', 'Henri_Matisse',
+  // Composers & musicians
+  'Ludwig_van_Beethoven', 'Wolfgang_Amadeus_Mozart', 'Johann_Sebastian_Bach',
+  'The_Beatles', 'Michael_Jackson', 'Frédéric_Chopin', 'Richard_Wagner',
+  'Pyotr_Ilyich_Tchaikovsky', 'Franz_Schubert', 'Louis_Armstrong',
+  // Authors
+  'William_Shakespeare', 'Dante_Alighieri', 'Homer', 'Franz_Kafka',
+  'Jane_Austen', 'Leo_Tolstoy', 'Charles_Dickens', 'Mark_Twain',
+  'Gabriel_García_Márquez', 'Jorge_Luis_Borges', 'Victor_Hugo',
+  'Fyodor_Dostoevsky', 'James_Joyce', 'Marcel_Proust',
+  // Film
+  'Charlie_Chaplin', 'Alfred_Hitchcock', 'Marilyn_Monroe', 'Stanley_Kubrick',
+  'Akira_Kurosawa', 'Ingmar_Bergman',
+  // History topics
+  'World_War_II', 'World_War_I', 'French_Revolution', 'Cold_War',
+  'Industrial_Revolution', 'Roman_Empire', 'Ancient_Egypt', 'Renaissance',
+  'The_Holocaust', 'Crusades', 'Mongol_Empire', 'Ottoman_Empire',
+  'Byzantine_Empire', 'Ancient_Greece', 'Soviet_Union', 'British_Empire',
+  // Science topics
+  'Evolution', 'Theory_of_relativity', 'Quantum_mechanics', 'DNA',
+  'Black_hole', 'Climate_change', 'Big_Bang',
+  // Cities & landmarks
+  'Paris', 'Tokyo', 'New_York_City', 'London', 'Rome', 'Beijing',
+  'Taj_Mahal', 'Great_Wall_of_China', 'Eiffel_Tower', 'Colosseum',
+  'Parthenon', 'Hagia_Sophia', 'Angkor_Wat',
+  // Culture & other
+  'Chess', 'Olympic_Games', 'Jazz', 'Rock_music', 'Photography',
+  'Architecture', 'Democracy', 'Philosophy',
+];
+document.getElementById('article-input').value =
+  VITAL_ARTICLES[Math.floor(Math.random() * VITAL_ARTICLES.length)];
+
+// Auto-load the default article on open
+loadArticle();
+</script>
+</body>
+</html>
