@@ -609,7 +609,7 @@
 
     /* ── Zoom control button ───────────────────────────────── */
     #pp-zoom-ctrl {
-      position: fixed; bottom: 56px; right: 16px; z-index: 406;
+      position: fixed; bottom: 66px; right: 16px; z-index: 406;
       display: flex; flex-direction: row;
       background: #fff; border-radius: 6px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.18);
@@ -691,11 +691,15 @@
     /* ── History chips bar ─────────────────────────────────── */
     #pp-history-bar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 404;
-      display: flex; align-items: center; flex-direction: row;
-      gap: 6px; padding: 8px 12px;
+      height: 54px;
+      display: flex; align-items: flex-start; flex-direction: row;
+      gap: 6px; padding: 8px 12px 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      overscroll-behavior-x: contain;
       scrollbar-width: none;
+      scroll-behavior: smooth;
       background: rgba(255,255,255,0.95);
       border-top: 1px solid #c8ccd1;
       box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
@@ -1406,6 +1410,13 @@ function renderHistoryBar(activeTitle) {
     progressEl.id = 'pp-global-progress';
     bar.appendChild(progressEl);
     document.body.appendChild(bar);
+    // Convert vertical mouse-wheel to horizontal scroll
+    bar.addEventListener('wheel', e => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        bar.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
   }
   // Remove only chips — preserve the progress bar element
   bar.querySelectorAll('.pp-chip').forEach(c => c.remove());
