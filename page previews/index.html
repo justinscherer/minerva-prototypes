@@ -410,13 +410,127 @@
     @keyframes pp-backdrop-in {
       from { opacity: 0; } to { opacity: 1; }
     }
+
+    /* ── Peek card (progressive disclosure) ───────────────── */
+    #pp-peek-overlay {
+      position: fixed; inset: 0; z-index: 408;
+      background: rgba(255,255,255,0.65);
+      animation: pp-backdrop-in 0.22s ease-out;
+      pointer-events: auto; cursor: default;
+    }
+    #pp-peek {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 410;
+      background: #fff;
+      border-top: 1px solid #c8ccd1;
+      box-shadow: 0 -4px 8px rgba(0,0,0,0.06), 0 0 16px rgba(0,0,0,0.06);
+      animation: pp-peek-in 0.30s cubic-bezier(0.4,0,0.2,1);
+      padding: 8px 0;
+      cursor: grab; user-select: none; touch-action: pan-x;
+    }
+    #pp-peek.pp-peek-dragging { cursor: grabbing; }
+    @keyframes pp-peek-in {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    #pp-peek-grabber-row {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 0 8px; cursor: grab;
+    }
+    #pp-peek-grabber-pill {
+      width: 36px; height: 5px;
+      background: #72777d; border-radius: 100px;
+    }
+    #pp-peek-body {
+      display: flex; gap: 8px; padding: 0 16px;
+      align-items: flex-start;
+    }
+    #pp-peek-thumb-wrap {
+      width: 128px; height: 128px;
+      border: 1px solid #c8ccd1; border-radius: 2px;
+      overflow: hidden; flex-shrink: 0;
+      background: #eaecf0;
+    }
+    #pp-peek-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #pp-peek-text-wrap {
+      flex: 1; min-width: 0; height: 128px;
+      display: flex; align-items: flex-start; overflow: hidden;
+    }
+    #pp-peek-text {
+      font-family: Georgia,'Times New Roman',serif;
+      font-size: 14px; line-height: 22px; color: #202122;
+      display: -webkit-box; -webkit-box-orient: vertical;
+      -webkit-line-clamp: 5; overflow: hidden;
+    }
+    #pp-peek-text b { font-weight: bold; font-family: Georgia,'Times New Roman',serif; }
+    #pp-peek-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 6px 16px 4px;
+    }
+    #pp-peek-readmore {
+      display: flex; align-items: center; gap: 4px;
+      color: #3366cc; font-size: 14px; line-height: 20px;
+      text-decoration: none; white-space: nowrap;
+      cursor: pointer;
+    }
+
     #pp-canvas {
       position: fixed; inset: 0; pointer-events: none;
       overflow: visible; z-index: 400;
       will-change: transform;
     }
     #pp-canvas.pp-panning {
-      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    /* Morph transitions: fire when pp-zoom-morphing is active */
+    #pp-canvas.pp-zoom-morphing .pp-card {
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1),
+                  border-radius 0.45s ease,
+                  background-color 0.4s ease,
+                  box-shadow 0.4s ease,
+                  padding 0.4s ease;
+    }
+    #pp-canvas.pp-zoom-morphing .pp-card-img-wrap {
+      transition: height 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    #pp-canvas.pp-zoom-morphing .pp-close-btn,
+    #pp-canvas.pp-zoom-morphing .pp-card-quote,
+    #pp-canvas.pp-zoom-morphing .pp-readmore-row {
+      transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease;
+    }
+    #pp-canvas.pp-zoom-morphing .pp-card-thumb-label {
+      transition: opacity 0.35s ease, max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    #pp-canvas.pp-zoom-morphing .pp-card-dot-label {
+      transition: opacity 0.35s ease 0.35s;
+    }
+    #pp-canvas.pp-zoom-morphing .pp-node {
+      transition: background-color 0.35s ease, border-color 0.35s ease;
+    }
+    #pp-canvas.pp-zoom-morphing .pp-node img {
+      transition: opacity 0.3s ease, max-height 0.4s cubic-bezier(0.4,0,0.2,1),
+                  width 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    #pp-canvas.pp-zoom-morphing .pp-node-dot {
+      transition: width 0.45s cubic-bezier(0.34,1.1,0.64,1),
+                  height 0.45s cubic-bezier(0.34,1.1,0.64,1),
+                  opacity 0.3s ease;
+    }
+    #pp-canvas.pp-zoom-morphing .pp-caption {
+      transition: opacity 0.3s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #pp-canvas.pp-zoom-morphing .pp-card,
+      #pp-canvas.pp-zoom-morphing .pp-card-img-wrap,
+      #pp-canvas.pp-zoom-morphing .pp-close-btn,
+      #pp-canvas.pp-zoom-morphing .pp-card-quote,
+      #pp-canvas.pp-zoom-morphing .pp-readmore-row,
+      #pp-canvas.pp-zoom-morphing .pp-card-thumb-label,
+      #pp-canvas.pp-zoom-morphing .pp-card-dot-label,
+      #pp-canvas.pp-zoom-morphing .pp-node,
+      #pp-canvas.pp-zoom-morphing .pp-node img,
+      #pp-canvas.pp-zoom-morphing .pp-node-dot,
+      #pp-canvas.pp-zoom-morphing .pp-caption { transition: none; }
+      #pp-canvas.pp-panning { transition: none; }
     }
     #pp-graph {
       position: absolute; left: 0; top: 0;
@@ -445,6 +559,7 @@
       display: flex; align-items: center; justify-content: center;
       background: none; border: none; cursor: pointer; padding: 5px;
       border-radius: 2px; color: #54595d; font-size: 18px; line-height: 1;
+      overflow: hidden; max-height: 42px;
     }
     .pp-close-btn:hover { background: rgba(0,0,0,0.04); }
     .pp-card-body { width: 100%; display: flex; flex-direction: column; gap: 8px; }
@@ -454,7 +569,7 @@
       background: #eaecf0; flex-shrink: 0;
     }
     .pp-card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .pp-card-quote { width: 100%; padding: 0 8px 4px; }
+    .pp-card-quote { width: 100%; padding: 0 8px 4px; overflow: hidden; max-height: 220px; }
     .pp-quote-icon { display: block; margin-bottom: 3px; }
     .pp-card-text {
       font-family: Georgia, 'Times New Roman', serif;
@@ -464,6 +579,7 @@
     .pp-readmore-row {
       display: flex; align-items: center; justify-content: flex-end;
       gap: 4px; width: 100%; padding-top: 6px;
+      overflow: hidden; max-height: 42px;
     }
     .pp-readmore {
       color: #3366cc; font-size: 14px; line-height: 20px;
@@ -477,7 +593,7 @@
       will-change: transform, opacity;
       pointer-events: auto;
     }
-    .pp-node img { width: 100%; display: block; object-fit: cover; }
+    .pp-node img { width: 100%; display: block; object-fit: cover; max-height: 500px; overflow: hidden; }
     .pp-caption {
       font-size: 11px; line-height: 14px; color: #202122;
       padding: 3px 4px;
@@ -490,6 +606,87 @@
       100% { opacity: 1; transform: scale(1)    rotate(0deg); }
     }
     a.pp-active-link { background: rgba(51,102,204,0.1); }
+
+    /* ── Zoom control button ───────────────────────────────── */
+    #pp-zoom-ctrl {
+      position: fixed; bottom: 56px; right: 16px; z-index: 406;
+      display: flex; flex-direction: row;
+      background: #fff; border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      overflow: hidden; border: 1px solid #c8ccd1;
+    }
+    #pp-zoom-in, #pp-zoom-out {
+      width: 40px; height: 36px; border: none; background: transparent;
+      font-size: 18px; cursor: pointer; color: #202122;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+    }
+    #pp-zoom-in { border-right: 1px solid #c8ccd1; }
+    #pp-zoom-in:hover:not(:disabled), #pp-zoom-out:hover:not(:disabled) { background: #f8f9fa; }
+    #pp-zoom-in:disabled, #pp-zoom-out:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── Zoom level representations ────────────────────────── */
+
+    /* Node dot: hidden at zoom 0, grows into view at zoom -1/-2 */
+    .pp-node-dot {
+      width: 0; height: 0; opacity: 0;
+      border-radius: 50%; background: #3366cc; flex-shrink: 0;
+    }
+    /* Thumb label on compact card: hidden at zoom 0 */
+    .pp-card-thumb-label {
+      font-size: 11px; line-height: 14px;
+      padding: 4px 6px; color: #202122;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      opacity: 0; max-height: 0;
+    }
+    /* Dot label beside shrunken card: always flex, hidden at zoom 0/-1 */
+    .pp-card-dot-label {
+      display: flex; align-items: center; gap: 5px;
+      position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+      white-space: nowrap; font-size: 11px; color: #3366cc; pointer-events: none;
+      background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 3px;
+      opacity: 0;
+    }
+
+    /* Zoom −1: card → compact thumb */
+    .pp-zoom-m1 .pp-card { width: 130px; padding: 4px; }
+    .pp-zoom-m1 .pp-close-btn { max-height: 0; opacity: 0; pointer-events: none; }
+    .pp-zoom-m1 .pp-card-quote { max-height: 0; opacity: 0; pointer-events: none; }
+    .pp-zoom-m1 .pp-readmore-row { max-height: 0; opacity: 0; pointer-events: none; }
+    .pp-zoom-m1 .pp-card-img-wrap { height: 88px; }
+    .pp-zoom-m1 .pp-card-thumb-label { opacity: 1; max-height: 30px; }
+
+    /* Zoom −1: node → labeled dot */
+    .pp-zoom-m1 .pp-node {
+      background: transparent; border-color: transparent; overflow: visible;
+      display: flex !important; align-items: center; gap: 5px;
+      width: auto !important; height: auto !important;
+    }
+    .pp-zoom-m1 .pp-node img { opacity: 0; max-height: 0; width: 0; overflow: hidden; }
+    .pp-zoom-m1 .pp-node-dot { width: 12px; height: 12px; opacity: 1; }
+    .pp-zoom-m1 .pp-caption {
+      -webkit-line-clamp: 1; color: #3366cc; white-space: nowrap; overflow: hidden;
+      background: rgba(255,255,255,0.92); padding: 2px 4px; border-radius: 3px;
+    }
+
+    /* Zoom −2: card → dot */
+    .pp-zoom-m2 .pp-card {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #3366cc; box-shadow: none; border: none;
+      padding: 0; overflow: visible;
+    }
+    .pp-zoom-m2 .pp-card > * { opacity: 0; pointer-events: none; }
+    .pp-zoom-m2 .pp-card-dot-label { opacity: 1; }
+
+    /* Zoom −2: node → bare dot */
+    .pp-zoom-m2 .pp-node {
+      background: transparent; border-color: transparent; overflow: visible;
+      display: flex !important; align-items: center;
+      width: auto !important; height: auto !important;
+    }
+    .pp-zoom-m2 .pp-node img { opacity: 0; max-height: 0; width: 0; overflow: hidden; }
+    .pp-zoom-m2 .pp-node-dot { width: 12px; height: 12px; opacity: 1; }
+    .pp-zoom-m2 .pp-caption { opacity: 0; }
 
     /* ── History chips bar ─────────────────────────────────── */
     #pp-history-bar {
@@ -1115,7 +1312,11 @@ let ppCurrentTitle = null;
 
 // ── Canvas world state ────────────────────────────────────────
 let ppFocusX = 0, ppFocusY = 0;                      // world point currently at viewport centre
+let ppZoomLevel = 0;                                  // 0, -1, or -2
+let ppUserHasPanned = false;                          // true once user manually drags the canvas
 let ppPanCleanup = null;                              // removes window pan listeners on clearCanvas
+let ppPeekTitle  = null;                              // title currently shown in peek card (null = no peek)
+let ppZoomAnimRAF = null;                             // RAF handle for in-progress zoom position animation
 
 // ── Global loading progress ───────────────────────────────────
 let ppTasksTotal = 0, ppTasksDone = 0;
@@ -1227,8 +1428,11 @@ function ensureCanvas() {
   const backdrop = document.createElement('div');
   backdrop.id = 'pp-backdrop';
 
-  // ── Pan-by-drag (mouse + touch) ──────────────────────────────
+  // ── Pan-by-drag (mouse + touch) + pinch-to-zoom ─────────────
   let dragging = false, startX = 0, startY = 0, focusX0 = 0, focusY0 = 0;
+  let pinching = false, pinchStartDist = 0, pinchLevelAtStart = 0;
+
+  const getPinchDist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
   const beginDrag = (cx, cy) => {
     dragging = true;
@@ -1238,6 +1442,7 @@ function ensureCanvas() {
   };
   const moveDrag = (cx, cy) => {
     if (!dragging) return;
+    ppUserHasPanned = true;
     ppFocusX = focusX0 - (cx - startX);
     ppFocusY = focusY0 - (cy - startY);
     applyCanvasTransform(false);
@@ -1250,15 +1455,37 @@ function ensureCanvas() {
     e.preventDefault();
   });
   backdrop.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1) return;
-    beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+    if (e.touches.length === 1) {
+      pinching = false;
+      beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+      dragging = false;
+      pinching = true;
+      pinchStartDist = getPinchDist(e.touches);
+      pinchLevelAtStart = ppZoomLevel;
+    }
     e.preventDefault();
   }, { passive: false });
 
-  const onMouseMove  = e => moveDrag(e.clientX, e.clientY);
-  const onTouchMove  = e => { if (e.touches.length === 1) { moveDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } };
-  const onMouseUp    = () => endDrag();
-  const onTouchEnd   = () => endDrag();
+  const onMouseMove = e => moveDrag(e.clientX, e.clientY);
+  const onTouchMove = e => {
+    if (e.touches.length === 1 && dragging && !pinching) {
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    } else if (e.touches.length === 2 && pinching) {
+      const ratio = getPinchDist(e.touches) / pinchStartDist;
+      const newLevel = ratio > 1.35 ? Math.min(0, pinchLevelAtStart + 1)
+                     : ratio < 0.72 ? Math.max(-2, pinchLevelAtStart - 1)
+                     : pinchLevelAtStart;
+      if (newLevel !== ppZoomLevel) setZoomLevel(newLevel);
+      e.preventDefault();
+    }
+  };
+  const onMouseUp  = () => endDrag();
+  const onTouchEnd = e => {
+    if (e.touches.length < 2) pinching = false;
+    if (e.touches.length === 0) endDrag();
+  };
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup',   onMouseUp);
@@ -1281,6 +1508,15 @@ function ensureCanvas() {
   canvas.appendChild(svg);
   document.body.appendChild(canvas);
 
+  // Zoom control buttons
+  const zoomCtrl = document.createElement('div');
+  zoomCtrl.id = 'pp-zoom-ctrl';
+  zoomCtrl.innerHTML = '<button id="pp-zoom-in" aria-label="Zoom in">+</button><button id="pp-zoom-out" aria-label="Zoom out">−</button>';
+  document.body.appendChild(zoomCtrl);
+  document.getElementById('pp-zoom-in').addEventListener('click', () => setZoomLevel(ppZoomLevel + 1));
+  document.getElementById('pp-zoom-out').addEventListener('click', () => setZoomLevel(ppZoomLevel - 1));
+  setZoomLevel(0);
+
   // Ensure history bar exists with global progress bar from the start
   if (!document.getElementById('pp-history-bar')) {
     const bar = document.createElement('div');
@@ -1298,7 +1534,9 @@ function applyCanvasTransform(animate) {
   const vpW = window.innerWidth, vpH = window.innerHeight;
   if (animate) {
     canvas.classList.add('pp-panning');
-    canvas.addEventListener('transitionend', () => canvas.classList.remove('pp-panning'), { once: true });
+    canvas.addEventListener('transitionend', e => {
+      if (e.propertyName === 'transform') canvas.classList.remove('pp-panning');
+    }, { once: true });
   } else {
     canvas.classList.remove('pp-panning');
   }
@@ -1310,14 +1548,259 @@ function panTo(wx, wy) {
   applyCanvasTransform(true);
 }
 
+function fitCardAndChildren(title) {
+  const card = title ? ppCardMap.get(title) : null;
+  if (!card || card.animating) { fitElementsInView(); return; }
+  let minX = card.x - CARD_W / 2, maxX = card.x + CARD_W / 2;
+  let minY = card.y - CARD_H_EST / 2, maxY = card.y + CARD_H_EST / 2;
+  for (const [, thumb] of ppThumbMap) {
+    if (thumb.parentTitle !== title || !thumb.bloomed) continue;
+    minX = Math.min(minX, thumb.x); maxX = Math.max(maxX, thumb.x + thumb.size);
+    minY = Math.min(minY, thumb.y); maxY = Math.max(maxY, thumb.y + thumb.cardH);
+  }
+  panTo((minX + maxX) / 2, (minY + maxY) / 2);
+}
+
+function fitElementsInView() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [, card] of ppCardMap) {
+    if (card.animating) continue;
+    minX = Math.min(minX, card.x - CARD_W / 2); maxX = Math.max(maxX, card.x + CARD_W / 2);
+    minY = Math.min(minY, card.y - CARD_H_EST / 2); maxY = Math.max(maxY, card.y + CARD_H_EST / 2);
+  }
+  for (const [, thumb] of ppThumbMap) {
+    if (!thumb.bloomed) continue;
+    minX = Math.min(minX, thumb.x); maxX = Math.max(maxX, thumb.x + thumb.size);
+    minY = Math.min(minY, thumb.y); maxY = Math.max(maxY, thumb.y + thumb.cardH);
+  }
+  if (minX === Infinity) return;
+  panTo((minX + maxX) / 2, (minY + maxY) / 2);
+}
+
+function repositionLabels() {
+  if (ppZoomLevel !== -1) return;
+  // Reset any previous nudges so we measure from baseline positions
+  document.querySelectorAll('#pp-canvas .pp-node .pp-caption').forEach(el => {
+    el.style.transform = '';
+  });
+
+  const nodes = [...document.querySelectorAll('#pp-canvas .pp-node')];
+
+  // Labels — can be nudged vertically
+  const labels = nodes.map(node => {
+    const caption = node.querySelector('.pp-caption');
+    if (!caption) return null;
+    const r = caption.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return null;
+    return { caption, x: r.left, y: r.top, w: r.width, h: r.height, nudge: 0 };
+  }).filter(Boolean);
+
+  // Dots — fixed obstacles (never move)
+  const dots = nodes.map(node => {
+    const dot = node.querySelector('.pp-node-dot');
+    if (!dot) return null;
+    const r = dot.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return null;
+    return { x: r.left, y: r.top, w: r.width, h: r.height };
+  }).filter(Boolean);
+
+  if (labels.length < 1) return;
+
+  const PAD = 3;
+  const xOverlap = (ax, aw, bx, bw) => ax < bx + bw + PAD && ax + aw + PAD > bx;
+
+  for (let iter = 0; iter < 100; iter++) {
+    let moved = false;
+
+    // Label ↔ label: push both equally
+    for (let i = 0; i < labels.length; i++) {
+      for (let j = i + 1; j < labels.length; j++) {
+        const a = labels[i], b = labels[j];
+        if (!xOverlap(a.x, a.w, b.x, b.w)) continue;
+        const aTop = a.y + a.nudge, bTop = b.y + b.nudge;
+        const aBot = aTop + a.h,    bBot = bTop + b.h;
+        if (aTop >= bBot + PAD || bTop >= aBot + PAD) continue;
+        const overlap = (Math.min(aBot, bBot) - Math.max(aTop, bTop) + PAD) / 2;
+        if (aTop <= bTop) { a.nudge -= overlap; b.nudge += overlap; }
+        else              { a.nudge += overlap; b.nudge -= overlap; }
+        moved = true;
+      }
+    }
+
+    // Label ↔ dot: label moves, dot stays fixed
+    for (const label of labels) {
+      for (const dot of dots) {
+        if (!xOverlap(label.x, label.w, dot.x, dot.w)) continue;
+        const lTop = label.y + label.nudge, lBot = lTop + label.h;
+        if (lTop >= dot.y + dot.h + PAD || dot.y >= lBot + PAD) continue;
+        // Full overlap pushed onto label alone
+        const overlap = Math.min(lBot, dot.y + dot.h) - Math.max(lTop, dot.y) + PAD;
+        const lCy = lTop + label.h / 2, dCy = dot.y + dot.h / 2;
+        label.nudge += lCy <= dCy ? -overlap : overlap;
+        moved = true;
+      }
+    }
+
+    if (!moved) break;
+  }
+
+  labels.forEach(({ caption, nudge }) => {
+    caption.style.transform = Math.abs(nudge) > 0.5 ? `translateY(${nudge}px)` : '';
+  });
+}
+
+function setZoomLevel(level) {
+  const oldLevel = ppZoomLevel;
+  const oldScale = ZOOM_POSITION_SCALES[-ppZoomLevel];
+  ppZoomLevel = Math.max(-2, Math.min(0, level));
+  const newScale = ZOOM_POSITION_SCALES[-ppZoomLevel];
+
+  const canvas = document.getElementById('pp-canvas');
+
+  const btnIn  = document.getElementById('pp-zoom-in');
+  const btnOut = document.getElementById('pp-zoom-out');
+  if (btnIn)  btnIn.disabled  = ppZoomLevel >= 0;
+  if (btnOut) btnOut.disabled = ppZoomLevel <= -2;
+
+  if (oldScale === newScale) return;
+  if (!canvas) return;
+
+  // Cancel any in-progress zoom animation
+  if (ppZoomAnimRAF) { cancelAnimationFrame(ppZoomAnimRAF); ppZoomAnimRAF = null; }
+  // Remove CSS canvas transition — we drive the transform manually in the RAF loop
+  canvas.classList.remove('pp-panning');
+
+  // Compute target focus:
+  // if user hasn't manually panned → snap to last-opened card at new scale
+  // otherwise → preserve the logical centre (scale focus proportionally)
+  let tFocusX = (ppFocusX / oldScale) * newScale;
+  let tFocusY = (ppFocusY / oldScale) * newScale;
+  if (!ppUserHasPanned && ppCurrentTitle) {
+    const anchor = ppCardMap.get(ppCurrentTitle);
+    if (anchor && !anchor.animating) {
+      tFocusX = anchor.logicalX * newScale;
+      tFocusY = anchor.logicalY * newScale;
+    }
+  }
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DURATION = reducedMotion ? 0 : 620;
+
+  // Snapshot start state (may be mid-animation from a previous zoom)
+  const sFocusX = ppFocusX, sFocusY = ppFocusY;
+  const cardStarts  = new Map([...ppCardMap ].filter(([,c]) => !c.animating).map(([t,c])  => [t, {x:c.x,  y:c.y }]));
+  const thumbStarts = new Map([...ppThumbMap].map(([t,th]) => [t, {x:th.x, y:th.y}]));
+
+  // Compute exact target positions for each element
+  const cardTargets  = new Map([...ppCardMap ].filter(([,c]) => !c.animating).map(([t,c])  => [t, {x:c.logicalX*newScale,              y:c.logicalY*newScale}]));
+  const thumbTargets = new Map([...ppThumbMap].map(([t,th]) => [t, {
+    x:    Math.round(th.logicalX    * newScale),
+    y:    Math.round(th.logicalY    * newScale),
+    size: Math.round(th.logicalSize * newScale),
+    cardH:Math.round(th.logicalCardH* newScale)
+  }]));
+
+  // Pre-update size/cardH in live map so thumbCtr() in redrawAllLines is correct
+  for (const [t, tgt] of thumbTargets) {
+    const th = ppThumbMap.get(t); if (th) { th.size = tgt.size; th.cardH = tgt.cardH; }
+  }
+
+  // Clear label nudge transforms when leaving zoom -1
+  if (oldLevel === -1) {
+    document.querySelectorAll('#pp-canvas .pp-node .pp-caption').forEach(el => el.style.transform = '');
+  }
+
+  // Enable CSS shape-morph transitions (width/border-radius/dot grow/img collapse etc.)
+  if (!reducedMotion) canvas.classList.add('pp-zoom-morphing');
+
+  const vpW = window.innerWidth, vpH = window.innerHeight;
+  const easeInOut = t => t < 0.5 ? 2*t*t : -1 + (4-2*t)*t;
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // Writes a single interpolated frame (0=start, 1=end) to DOM + lines
+  function applyIntermediate(t) {
+    ppFocusX = lerp(sFocusX, tFocusX, t);
+    ppFocusY = lerp(sFocusY, tFocusY, t);
+    canvas.style.transform = `translate(${vpW/2 - ppFocusX}px, ${vpH/2 - ppFocusY}px)`;
+
+    for (const [title, tgt] of cardTargets) {
+      const card = ppCardMap.get(title); if (!card) continue;
+      const s = cardStarts.get(title);  if (!s) continue;
+      card.x = lerp(s.x, tgt.x, t);
+      card.y = lerp(s.y, tgt.y, t);
+      card.anchor.style.left = card.x + 'px';
+      card.anchor.style.top  = card.y + 'px';
+    }
+    for (const [title, tgt] of thumbTargets) {
+      const th = ppThumbMap.get(title); if (!th) continue;
+      const s = thumbStarts.get(title); if (!s) continue;
+      th.x = lerp(s.x, tgt.x, t);
+      th.y = lerp(s.y, tgt.y, t);
+      th.el.style.left = th.x + 'px';
+      th.el.style.top  = th.y + 'px';
+    }
+
+    redrawAllLines();
+  }
+
+  // Snaps everything to exact final values and cleans up
+  function finalize() {
+    ppFocusX = tFocusX; ppFocusY = tFocusY;
+    canvas.style.transform = `translate(${vpW/2 - ppFocusX}px, ${vpH/2 - ppFocusY}px)`;
+    for (const [t, tgt] of cardTargets) {
+      const card = ppCardMap.get(t); if (!card) continue;
+      card.x = tgt.x; card.y = tgt.y;
+      card.anchor.style.left = card.x + 'px';
+      card.anchor.style.top  = card.y + 'px';
+    }
+    for (const [t, tgt] of thumbTargets) {
+      const th = ppThumbMap.get(t); if (!th) continue;
+      th.x = tgt.x; th.y = tgt.y;
+      th.el.style.left  = th.x + 'px';
+      th.el.style.top   = th.y + 'px';
+      th.el.style.width = th.size + 'px';
+      const img = th.el.querySelector('img');
+      if (img) img.style.height = th.size + 'px';
+    }
+    canvas.classList.remove('pp-zoom-morphing');
+    redrawAllLines();
+    if (ppZoomLevel === -1) repositionLabels();
+    ppZoomAnimRAF = null;
+  }
+
+  // Switch zoom class one frame AFTER pp-zoom-morphing is committed, so the
+  // browser sees the "before" state first and CSS transitions fire correctly
+  requestAnimationFrame(() => {
+    canvas.classList.remove('pp-zoom-0', 'pp-zoom-m1', 'pp-zoom-m2');
+    canvas.classList.add(['pp-zoom-0', 'pp-zoom-m1', 'pp-zoom-m2'][-ppZoomLevel]);
+
+    if (DURATION === 0) { finalize(); return; }
+
+    const startTime = performance.now();
+    function tick(now) {
+      const raw = Math.min((now - startTime) / DURATION, 1);
+      applyIntermediate(easeInOut(raw));
+      if (raw < 1) {
+        ppZoomAnimRAF = requestAnimationFrame(tick);
+      } else {
+        finalize();
+      }
+    }
+    ppZoomAnimRAF = requestAnimationFrame(tick);
+  });
+}
+
 function clearCanvas() {
   ppPanCleanup?.(); ppPanCleanup = null;
   document.getElementById('pp-backdrop')?.remove();
   document.getElementById('pp-canvas')?.remove();
+  document.getElementById('pp-zoom-ctrl')?.remove();
   ppCardMap.clear();
   ppThumbMap.clear();
   ppAllConnections.clear();
   ppFocusX = 0; ppFocusY = 0;
+  ppZoomLevel = 0;
+  ppUserHasPanned = false;
   ppTasksTotal = 0; ppTasksDone = 0;
   document.querySelectorAll('a.pp-active-link').forEach(a => a.classList.remove('pp-active-link'));
 }
@@ -1359,11 +1842,16 @@ function redrawAllLines() {
   // Only draw lines to/from cards that have finished their expansion animation
   const settledCards  = new Map([...ppCardMap].filter(([, c]) => !c.animating));
 
+  const thumbCtr = th => ppZoomLevel <= -1
+    ? { cx: th.x + 6, cy: th.y + 6 }
+    : { cx: th.x + th.size / 2, cy: th.y + th.cardH / 2 };
+
   // Card → its bloomed thumb nodes
   for (const [, thumb] of bloomedThumbs) {
     const pc = settledCards.get(thumb.parentTitle);
     if (!pc) continue;
-    addLine(pc.x, pc.y, thumb.x + thumb.size / 2, thumb.y + thumb.cardH / 2);
+    const { cx, cy } = thumbCtr(thumb);
+    addLine(pc.x, pc.y, cx, cy);
   }
 
   // Thumb ↔ thumb within same parent (Wikipedia-connected, both bloomed)
@@ -1377,8 +1865,8 @@ function redrawAllLines() {
     for (let i = 0; i < thumbs.length - 1; i++)
       for (let j = i + 1; j < thumbs.length; j++) {
         if (!connected(thumbs[i].t, thumbs[j].t)) continue;
-        const a = thumbs[i].thumb, b = thumbs[j].thumb;
-        addLine(a.x + a.size/2, a.y + a.cardH/2, b.x + b.size/2, b.y + b.cardH/2);
+        const ac = thumbCtr(thumbs[i].thumb), bc = thumbCtr(thumbs[j].thumb);
+        addLine(ac.cx, ac.cy, bc.cx, bc.cy);
       }
   }
 
@@ -1396,13 +1884,23 @@ function redrawAllLines() {
     for (const [cardTitle, card] of settledCards) {
       if (cardTitle === thumb.parentTitle) continue;
       if (!connected(thumbTitle, cardTitle)) continue;
-      addLine(card.x, card.y, thumb.x + thumb.size/2, thumb.y + thumb.cardH/2, '#3366cc', 1, 0.45);
+      const { cx, cy } = thumbCtr(thumb);
+      addLine(card.x, card.y, cx, cy, '#3366cc', 1, 0.45);
     }
+
+  // Structural parent → child card connections (always drawn regardless of Wikipedia links)
+  for (const [, childCard] of settledCards) {
+    if (!childCard.parentCardTitle) continue;
+    const parentCard = settledCards.get(childCard.parentCardTitle);
+    if (!parentCard) continue;
+    addLine(childCard.x, childCard.y, parentCard.x, parentCard.y, '#3366cc', 2, 0.85);
+  }
 }
 
 // ── Collision detection helpers ───────────────────────────────
 
 const CARD_W = 277, CARD_H_EST = 380;
+const ZOOM_POSITION_SCALES = [1.0, 0.55, 0.30]; // indexed by -ppZoomLevel
 
 function rectsOverlap(a, b, pad) {
   pad = pad || 0;
@@ -1414,9 +1912,11 @@ function rectsOverlap(a, b, pad) {
 // optionally excluding one card title (the one being placed).
 function getOccupiedRects(excludeCardTitle) {
   const rects = [];
+  const _zs = ZOOM_POSITION_SCALES[-ppZoomLevel];
+  const cw = CARD_W * _zs, ch = CARD_H_EST * _zs;
   for (const [t, c] of ppCardMap) {
     if (t === excludeCardTitle) continue;
-    rects.push({ x: c.x - CARD_W / 2, y: c.y - CARD_H_EST / 2, w: CARD_W, h: CARD_H_EST });
+    rects.push({ x: c.x - cw / 2, y: c.y - ch / 2, w: cw, h: ch });
   }
   for (const [, th] of ppThumbMap) {
     rects.push({ x: th.x, y: th.y, w: th.size, h: th.cardH });
@@ -1426,11 +1926,13 @@ function getOccupiedRects(excludeCardTitle) {
 
 // Finds nearest free world position for a new card.
 function findFreeCardPos(preferX, preferY, excludeTitle) {
-  const PAD = 20;
-  const cw = CARD_W + PAD, ch = CARD_H_EST + PAD;
+  const _zs = ZOOM_POSITION_SCALES[-ppZoomLevel];
+  const PAD = 20 * _zs;
+  const cardW = CARD_W * _zs, cardH = CARD_H_EST * _zs;
+  const cw = cardW + PAD, ch = cardH + PAD;
   const existing = getOccupiedRects(excludeTitle);
   const tryPos = (cx, cy) => {
-    const r = { x: cx - CARD_W / 2, y: cy - CARD_H_EST / 2, w: CARD_W, h: CARD_H_EST };
+    const r = { x: cx - cardW / 2, y: cy - cardH / 2, w: cardW, h: cardH };
     return !existing.some(e => rectsOverlap(r, e, PAD));
   };
   if (tryPos(preferX, preferY)) return { wx: preferX, wy: preferY };
@@ -1451,7 +1953,7 @@ function findFreeCardPos(preferX, preferY, excludeTitle) {
 // ── Open a single card at world position (wx, wy) ─────────────
 
 // fromThumb: { x, y, size, cardH } world bbox of the thumbnail being expanded, or null
-function openCard(title, wx, wy, lang, fromThumb) {
+function openCard(title, wx, wy, lang, fromThumb, parentCardTitle) {
   if (ppCardMap.has(title)) { panTo(ppCardMap.get(title).x, ppCardMap.get(title).y); return; }
 
   const canvas = document.getElementById('pp-canvas');
@@ -1484,7 +1986,9 @@ function openCard(title, wx, wy, lang, fromThumb) {
           <path d="M6 3 H2 a1 1 0 0 0-1 1 V12 a1 1 0 0 0 1 1 H10 a1 1 0 0 0 1-1 V8" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </a>
-    </div>`;
+    </div>
+    <div class="pp-card-thumb-label">${title.replace(/_/g, ' ')}</div>
+    <div class="pp-card-dot-label">${title.replace(/_/g, ' ')}</div>`;
 
   if (fromThumb) {
     // Anchor sits at final world pos; offset it to start above the thumbnail
@@ -1496,7 +2000,8 @@ function openCard(title, wx, wy, lang, fromThumb) {
     anchor.appendChild(card);
     canvas.appendChild(anchor);
     // Mark animating so redrawAllLines skips this card until it settles
-    ppCardMap.set(title, { x: wx, y: wy, anchor, animating: true });
+    { const _zs = ZOOM_POSITION_SCALES[-ppZoomLevel];
+      ppCardMap.set(title, { x: wx, y: wy, logicalX: wx / _zs, logicalY: wy / _zs, anchor, animating: true, parentCardTitle: parentCardTitle || null }); }
     requestAnimationFrame(() => requestAnimationFrame(() => {
       anchor.style.transition = 'transform 0.52s cubic-bezier(0.4,0,0.2,1)';
       anchor.style.transform  = 'translate(0,0)';
@@ -1513,10 +2018,12 @@ function openCard(title, wx, wy, lang, fromThumb) {
   } else {
     anchor.appendChild(card);
     canvas.appendChild(anchor);
-    ppCardMap.set(title, { x: wx, y: wy, anchor, animating: false });
+    { const _zs = ZOOM_POSITION_SCALES[-ppZoomLevel];
+      ppCardMap.set(title, { x: wx, y: wy, logicalX: wx / _zs, logicalY: wy / _zs, anchor, animating: false, parentCardTitle: parentCardTitle || null }); }
   }
 
   card.querySelector('.pp-close-btn').addEventListener('click', () => removeCard(title));
+  card.querySelector('.pp-readmore').addEventListener('click', e => { e.preventDefault(); navigateToArticle(title); });
 
   // Count this card's loading tasks globally: 1 summary + intro links batch + 1 connections fetch
   ppBeginLoad(2); // summary + connections; node batch added after intro links resolve
@@ -1603,37 +2110,217 @@ function openCard(title, wx, wy, lang, fromThumb) {
   }).catch(() => { ppEndLoad(1); });
 }
 
+// ── Peek card (progressive disclosure) ───────────────────────
+
+function hidePeekCard() {
+  const peek = document.getElementById('pp-peek');
+  if (peek?._dragCleanup) peek._dragCleanup();
+  peek?.remove();
+  document.getElementById('pp-peek-overlay')?.remove();
+  ppPeekTitle = null;
+}
+
+function showPeekCard(title, lang, anchorEl) {
+  hidePeekCard();
+  ppPeekTitle = title;
+  const wikiUrl = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+
+  // Overlay (light frosted; click to dismiss)
+  const overlay = document.createElement('div');
+  overlay.id = 'pp-peek-overlay';
+  overlay.addEventListener('click', () => {
+    hidePeekCard();
+    anchorEl?.classList.remove('pp-active-link');
+  });
+  document.body.appendChild(overlay);
+
+  // Peek card
+  const peek = document.createElement('div');
+  peek.id = 'pp-peek';
+  peek.innerHTML = `
+    <div id="pp-peek-grabber-row">
+      <div id="pp-peek-grabber-pill"></div>
+    </div>
+    <div id="pp-peek-body">
+      <div id="pp-peek-thumb-wrap"></div>
+      <div id="pp-peek-text-wrap">
+        <p id="pp-peek-text">Loading…</p>
+      </div>
+    </div>
+    <div id="pp-peek-footer">
+      <a id="pp-peek-readmore" href="${wikiUrl}" target="_blank" rel="noopener">
+        Read more
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+          <path d="M8 1h5v5" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 1 L6 8" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 3 H2 a1 1 0 0 0-1 1 V12 a1 1 0 0 0 1 1 H10 a1 1 0 0 0 1-1 V8" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>`;
+  document.body.appendChild(peek);
+
+  // ── Drag-to-expand / drag-to-dismiss gesture ─────────────
+  const EXPAND_THRESHOLD  = -55;   // px up  → expand to graph
+  const DISMISS_THRESHOLD =  55;   // px down → dismiss
+  const ANIM_DUR = 280;            // ms for snap/fly animation
+
+  let dragStartY = 0, dragDeltaY = 0, dragging = false, dragStartTime = 0;
+
+  const startDrag = y => {
+    dragging = true;
+    dragStartY = y; dragDeltaY = 0; dragStartTime = Date.now();
+    peek.style.transition = 'none';
+    peek.classList.add('pp-peek-dragging');
+  };
+  const moveDrag = y => {
+    if (!dragging) return;
+    dragDeltaY = y - dragStartY;
+    // Free upward, clamp downward to 160px
+    peek.style.transform = `translateY(${Math.min(160, dragDeltaY)}px)`;
+  };
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    peek.classList.remove('pp-peek-dragging');
+    const elapsed = Math.max(1, Date.now() - dragStartTime);
+    const vel = dragDeltaY / elapsed; // px/ms (+= down)
+    peek.style.transition = `transform ${ANIM_DUR}ms cubic-bezier(0.4,0,0.2,1)`;
+    overlay.style.transition = `opacity ${ANIM_DUR}ms ease-out`;
+
+    if (dragDeltaY < EXPAND_THRESHOLD || vel < -0.4) {
+      // Swipe up → launch graph
+      peek.style.transform = 'translateY(-110%)';
+      overlay.style.opacity = '0';
+      setTimeout(() => { hidePeekCard(); expandPeekToGraph(title, lang, anchorEl); }, ANIM_DUR);
+    } else if (dragDeltaY > DISMISS_THRESHOLD || vel > 0.4) {
+      // Swipe down → dismiss
+      peek.style.transform = 'translateY(110%)';
+      overlay.style.opacity = '0';
+      setTimeout(() => { hidePeekCard(); anchorEl?.classList.remove('pp-active-link'); }, ANIM_DUR);
+    } else {
+      // Snap back
+      peek.style.transform = 'translateY(0)';
+    }
+  };
+
+  // Mouse
+  peek.addEventListener('mousedown', e => { startDrag(e.clientY); e.preventDefault(); });
+  const onMouseMove = e => moveDrag(e.clientY);
+  const onMouseUp   = () => endDrag();
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup',   onMouseUp);
+
+  // Touch
+  peek.addEventListener('touchstart', e => { startDrag(e.touches[0].clientY); }, { passive: true });
+  const onTouchMove = e => { if (e.touches.length === 1) moveDrag(e.touches[0].clientY); };
+  const onTouchEnd  = () => endDrag();
+  window.addEventListener('touchmove', onTouchMove, { passive: true });
+  window.addEventListener('touchend',  onTouchEnd);
+
+  // Allow "Read more" link clicks through without triggering drag; navigate in-prototype
+  const readmoreEl = peek.querySelector('#pp-peek-readmore');
+  readmoreEl.addEventListener('mousedown', e => e.stopPropagation());
+  readmoreEl.addEventListener('click', e => { e.preventDefault(); navigateToArticle(title); });
+
+  // Store cleanup for hidePeekCard
+  peek._dragCleanup = () => {
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup',   onMouseUp);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend',  onTouchEnd);
+  };
+
+  // Fetch summary → thumbnail + first sentence
+  fetchPageSummary(lang, title).then(
+    data => {
+      if (ppPeekTitle !== title) return;
+      try {
+        if (data?.thumbnail?.source) {
+          const img = document.createElement('img');
+          img.id = 'pp-peek-thumb';
+          img.src = data.thumbnail.source; img.alt = '';
+          peek.querySelector('#pp-peek-thumb-wrap').appendChild(img);
+        }
+        const textEl = peek.querySelector('#pp-peek-text');
+        if (textEl) {
+          if (data?.extract_html) {
+            textEl.innerHTML = extractFirstSentence(data.extract_html);
+          } else if (data?.extract) {
+            const safe = data.extract.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+            textEl.textContent = (safe.replace(/\.\s[\s\S]*/,'.') || safe);
+          }
+        }
+      } catch (_) {}
+    },
+    () => {}
+  );
+}
+
+function expandPeekToGraph(title, lang, anchorEl) {
+  ppCurrentTitle = title;
+  clearCanvas();
+  ensureCanvas();
+  ppFocusX = 0; ppFocusY = 0;
+  applyCanvasTransform(false);
+  anchorEl?.classList.add('pp-active-link');
+  openCard(title, 0, 0, lang);
+}
+
+// Load a Wikipedia article title inside the prototype (used by all "Read more" links)
+function navigateToArticle(title) {
+  hidePeekCard();
+  closePagePreview();
+  const input = document.getElementById('article-input');
+  if (input) input.value = title.replace(/ /g, '_');
+  loadArticle();
+}
+
 // ── Show / navigate preview ───────────────────────────────────
 
 function showPagePreview(title, anchorEl, fromHistory = false) {
   const fromThumbnail = anchorEl?.classList.contains('pp-node');
-
-  if (fromThumbnail) {
-    if (ppHistory.length === 0 && ppCurrentTitle) addToHistory(ppCurrentTitle);
-    addToHistory(title);
-  }
-  ppCurrentTitle = title;
-  if (ppHistory.length > 0) renderHistoryBar(title);
-
   const lang = (document.getElementById('lang-input').value.trim() || 'en').toLowerCase();
 
-  if (!fromThumbnail) {
-    // Article link or chip: if card already open pan to it, else reset canvas
-    if (fromHistory && ppCardMap.has(title)) { panTo(ppCardMap.get(title).x, ppCardMap.get(title).y); return; }
+  if (fromThumbnail) {
+    // Thumbnail click: add to history, expand to new card in existing canvas
+    hidePeekCard();
+    if (ppHistory.length === 0 && ppCurrentTitle) addToHistory(ppCurrentTitle);
+    addToHistory(title);
+    ppCurrentTitle = title;
+    if (ppHistory.length > 0) renderHistoryBar(title);
+  } else if (fromHistory) {
+    // History chip: pan to existing card or reopen canvas
+    hidePeekCard();
+    ppCurrentTitle = title;
+    renderHistoryBar(title);
+    if (ppCardMap.has(title)) { panTo(ppCardMap.get(title).x, ppCardMap.get(title).y); return; }
     clearCanvas();
     ensureCanvas();
     ppFocusX = 0; ppFocusY = 0;
     applyCanvasTransform(false);
     anchorEl?.classList.add('pp-active-link');
     openCard(title, 0, 0, lang);
+    return;
   } else {
-    // Thumbnail click: expand thumb into new card, leave existing cards intact
+    // Article link click: show peek card (progressive disclosure)
+    ppCurrentTitle = title;
+    document.querySelectorAll('a.pp-active-link').forEach(a => a.classList.remove('pp-active-link'));
+    anchorEl?.classList.add('pp-active-link');
+    clearCanvas(); // close any existing graph
+    showPeekCard(title, lang, anchorEl);
+    return;
+  }
+
+  // Thumbnail click: expand thumb into new card, leave existing cards intact
+  {
     ensureCanvas();
     const thumb = ppThumbMap.get(title);
     let wx = ppFocusX, wy = ppFocusY;
     let fromThumbData = null;
+    let parentCardTitle = null;
 
     if (thumb) {
+      parentCardTitle = thumb.parentTitle;
       wx = thumb.x + thumb.size / 2;
       wy = thumb.y + thumb.cardH / 2;
       // Push further from parent card for breathing room
@@ -1660,7 +2347,7 @@ function showPagePreview(title, anchorEl, fromHistory = false) {
     wx = free.wx; wy = free.wy;
 
     panTo(wx, wy);
-    openCard(title, wx, wy, lang, fromThumbData);
+    openCard(title, wx, wy, lang, fromThumbData, parentCardTitle);
   }
 }
 
@@ -1720,6 +2407,10 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
   const canvas = document.getElementById('pp-canvas');
   if (!canvas) return;
 
+  // All layout constants in logical pixels (zoom-0 equivalents).
+  // wx/wy are physical; convert to logical for band placement.
+  const _zs     = ZOOM_POSITION_SCALES[-ppZoomLevel];
+  const lwx     = wx / _zs, lwy = wy / _zs;
   const MIN_SIZE   = 70;
   const CAPTION_H  = 30;
   const GAP        = 8;
@@ -1727,10 +2418,10 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
   const BAND_H     = 210;
   const CARD_H_EST = 380;
 
-  // World-space bands above and below the card
-  const xMin    = wx - BAND_W / 2;
-  const topZone = { y1: wy - CARD_H_EST / 2 - GAP - BAND_H, y2: wy - CARD_H_EST / 2 - GAP };
-  const botZone = { y1: wy + CARD_H_EST / 2 + GAP,          y2: wy + CARD_H_EST / 2 + GAP + BAND_H };
+  // Logical-space bands above and below the card
+  const xMin    = lwx - BAND_W / 2;
+  const topZone = { y1: lwy - CARD_H_EST / 2 - GAP - BAND_H, y2: lwy - CARD_H_EST / 2 - GAP };
+  const botZone = { y1: lwy + CARD_H_EST / 2 + GAP,          y2: lwy + CARD_H_EST / 2 + GAP + BAND_H };
 
   // Skip nodes already visible on canvas
   const filtered = nodes.filter(n => {
@@ -1777,22 +2468,24 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
   const CPAD = 8;
   const existingRects = getOccupiedRects(parentTitle);
   const placedRects   = [];
-  const positions     = [];
+  const positions     = [];  // logical x, y
 
-  const fitsAt = (rx, ry) => {
-    const r = { x: rx, y: ry, w: size, h: cardH };
-    return !existingRects.some(e => rectsOverlap(r, e, CPAD)) &&
-           !placedRects.some(e =>   rectsOverlap(r, e, CPAD));
+  // rawPositions are in logical space; collision check in physical space
+  const pSize = size * _zs, pCardH = cardH * _zs, pCPAD = CPAD * _zs;
+  const fitsAt = (lx, ly) => {
+    const r = { x: lx * _zs, y: ly * _zs, w: pSize, h: pCardH };
+    return !existingRects.some(e => rectsOverlap(r, e, pCPAD)) &&
+           !placedRects.some(e =>   rectsOverlap(r, e, pCPAD));
   };
 
   for (const pos of rawPositions) {
-    let { x, y } = pos;
+    let { x, y } = pos; // logical
     if (fitsAt(x, y)) {
       positions.push({ ...pos, x, y });
-      placedRects.push({ x, y, w: size, h: cardH });
+      placedRects.push({ x: x * _zs, y: y * _zs, w: pSize, h: pCardH });
       continue;
     }
-    // Spiral outward from preferred position until a free cell is found
+    // Spiral outward in logical steps
     const step = size + CPAD;
     let placed = false;
     outer: for (let ring = 1; ring <= 14; ring++) {
@@ -1803,7 +2496,7 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
           const ny = Math.round(y + sj * step);
           if (fitsAt(nx, ny)) {
             positions.push({ ...pos, x: nx, y: ny });
-            placedRects.push({ x: nx, y: ny, w: size, h: cardH });
+            placedRects.push({ x: nx * _zs, y: ny * _zs, w: pSize, h: pCardH });
             placed = true;
             break outer;
           }
@@ -1827,25 +2520,32 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
       h.title === nodeTitle.replace(/ /g, '_') ||
       h.title.replace(/_/g, ' ') === nodeTitle
     );
+    // x, y are logical; convert to physical for DOM placement
+    const px = Math.round(x * _zs), py = Math.round(y * _zs);
     el.className = 'pp-node' + (seen ? ' pp-node-seen' : '');
-    el.style.cssText = `left:${x}px;top:${y}px;width:${size}px;`;
-    el.style.transformOrigin = `${size / 2}px ${cardH / 2}px`;
+    el.style.cssText = `left:${px}px;top:${py}px;width:${pSize}px;`;
+    el.style.transformOrigin = `${pSize / 2}px ${pCardH / 2}px`;
     el.style.setProperty('--bloom-rot', `${ROTS[idx % 8]}deg`);
+
+    const dotEl = document.createElement('div');
+    dotEl.className = 'pp-node-dot';
 
     const img = document.createElement('img');
     img.alt = '';
-    img.style.height = `${size}px`;
+    img.style.height = `${pSize}px`;
 
     const caption = document.createElement('div');
     caption.className = 'pp-caption';
     caption.textContent = nodeTitle.replace(/_/g, ' ');
 
+    el.appendChild(dotEl);
     el.appendChild(img);
     el.appendChild(caption);
     canvas.appendChild(el);
 
     // Register in world map (bloomed=false until image loads + animation fires)
-    ppThumbMap.set(nodeTitle, { x, y, size, cardH, parentTitle, el, bloomed: false });
+    // logicalX/Y are zoom-0 positions; size/cardH are physical at current zoom
+    ppThumbMap.set(nodeTitle, { x: px, y: py, logicalX: x, logicalY: y, size: pSize, cardH: pCardH, logicalSize: size, logicalCardH: cardH, parentTitle, el, bloomed: false });
 
     const delay = idx * BLOOM_STAG;
     const bloom = () => {
@@ -1855,7 +2555,10 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
         const entry = ppThumbMap.get(nodeTitle);
         if (entry) {
           entry.bloomed = true;
-          if (document.getElementById('pp-canvas')) redrawAllLines();
+          if (document.getElementById('pp-canvas')) {
+            redrawAllLines();
+            if (ppZoomLevel === -1) repositionLabels();
+          }
         }
       }, { once: true });
     };
