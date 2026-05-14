@@ -243,8 +243,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: #eaecf0;
-      border: 1px solid #a2a9b1;
+      background: #e8eeff;
+      border: 1px solid #3366cc;
       border-radius: 2px;
       padding: 13px;
       margin-top: 12px;
@@ -265,7 +265,7 @@
     }
     .app-download-card-title {
       font-weight: 700;
-      color: #202122;
+      color: #3366cc;
     }
     .app-download-card-desc {
       color: #54595d;
@@ -1234,7 +1234,7 @@ function insertAppDownloadCard(root) {
   const infobox = root.querySelector('.art .infobox');
   if (infobox) {
     const target = infobox.closest('.infobox-wrap') ?? infobox;
-    target.insertAdjacentHTML('afterend', cardHTML);
+    target.insertAdjacentHTML('beforebegin', cardHTML);
   } else {
     const accSections = root.querySelector('.acc-sections');
     accSections.previousElementSibling.insertAdjacentHTML('beforeend', cardHTML);
