@@ -1193,6 +1193,8 @@ function ttsStart() {
 function ttsStop() {
   clearInterval(TTS.keepAliveInterval);
   TTS.keepAliveInterval = null;
+  // Cancel twice — iOS speech engine sometimes ignores a single cancel
+  speechSynthesis.cancel();
   speechSynthesis.cancel();
   unwrapParagraph();
 
@@ -1507,9 +1509,13 @@ document.getElementById('article-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') loadArticle();
 });
 
+function ttsHaltOnHide() {
+  if (TTS.paragraphs.length) ttsStop();
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && speechSynthesis.speaking) ttsStop();
+  if (document.hidden) ttsHaltOnHide();
 });
+document.addEventListener('pagehide', ttsHaltOnHide);
 
 // Auto-load a random vital article on open
 const randomArticle = VITAL_ARTICLES[Math.floor(Math.random() * VITAL_ARTICLES.length)];
