@@ -1119,6 +1119,14 @@ function ttsUpdateBar() {
   if (fill) fill.style.width = `${((TTS.cursor + 1) / TTS.paragraphs.length) * 100}%`;
 }
 
+function scrollToCenter(el) {
+  const barH = 60;
+  const viewH = window.innerHeight - barH;
+  const elTop = el.getBoundingClientRect().top + window.scrollY;
+  const target = Math.max(0, elTop + el.offsetHeight / 2 - viewH / 2);
+  window.scrollTo({ top: target, behavior: 'smooth' });
+}
+
 function ttsStartParagraph(idx) {
   if (idx >= TTS.paragraphs.length) { ttsStop(); return; }
 
@@ -1135,9 +1143,10 @@ function ttsStartParagraph(idx) {
   }
 
   para.el.classList.add('tts-para-active');
-  para.el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  // Defer overlay positioning one frame so scroll/layout settles
+  scrollToCenter(para.el);
+  // Update overlay immediately (approx), then again after smooth scroll settles
   requestAnimationFrame(() => ttsUpdateOverlay(para.el));
+  setTimeout(() => ttsUpdateOverlay(para.el), 400);
 
   wrapWordsInParagraph(para.el);
   TTS.offsetIndex = buildOffsetIndex(para.el, para.text);
@@ -1153,7 +1162,6 @@ function ttsStartParagraph(idx) {
     for (const entry of TTS.offsetIndex) {
       if (ci >= entry.start && ci < entry.end) {
         entry.span.classList.add('tts-active');
-        entry.span.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         break;
       }
     }
