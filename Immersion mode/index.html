@@ -1507,6 +1507,10 @@ document.getElementById('article-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') loadArticle();
 });
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && speechSynthesis.speaking) ttsStop();
+});
+
 // Auto-load a random vital article on open
 const randomArticle = VITAL_ARTICLES[Math.floor(Math.random() * VITAL_ARTICLES.length)];
 document.getElementById('article-input').value = randomArticle;
