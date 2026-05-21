@@ -529,7 +529,7 @@ function isDecorative(src) {
   if (/[?&](width|height)=\d{1,2}[^0-9]/i.test(src)) return true;
   if (/1x1|pixel|blank/i.test(src)) return true;
   const m = src.match(/\/(\d+)px-/);
-  return m ? parseInt(m[1], 10) < 100 : false;
+  return m ? parseInt(m[1], 10) < 50 : false;
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -799,6 +799,70 @@ function wireAccLinks(container) {
   });
 }
 
+function processBodyImages(root) {
+  root.querySelectorAll('.art.body img').forEach(img => {
+    const src = img.getAttribute('src') || '';
+
+    // Skip gallery and infobox images
+    if (img.closest('.gallery-scroll')) return;
+    if (img.closest('.infobox, table.infobox, .taxobox, .sidebar')) return;
+    if (isDecorative(src)) return;
+
+    // Size threshold: use URL-encoded width (e.g. /250px-)
+    const m = src.match(/\/(\d+)px-/);
+    if (m && parseInt(m[1], 10) < 50) return;
+
+    const artBody = img.closest('.art.body');
+    if (!artBody) return;
+
+    // Find known floated wrapper (may be null for standalone imgs)
+    const container = img.closest('.thumb, .tright, .tleft, figure');
+
+    // Floated thumbs: move after next <p> sibling
+    if (container && container.matches('.thumb, .tright, .tleft')) {
+      let topEl = container;
+      while (topEl.parentElement && !topEl.parentElement.matches('.art.body')) {
+        topEl = topEl.parentElement;
+      }
+      if (topEl.parentElement && topEl.parentElement.matches('.art.body')) {
+        let nextP = topEl.nextElementSibling;
+        while (nextP && nextP.tagName !== 'P') nextP = nextP.nextElementSibling;
+        if (nextP) nextP.insertAdjacentElement('afterend', topEl);
+      }
+    }
+
+    // Walk every ancestor from img up to (not including) .art.body —
+    // make each block-level and clear inline width constraints so nothing
+    // in the chain can clamp the image narrower than the viewport.
+    let el = img.parentElement;
+    while (el && el !== artBody) {
+      el.style.display  = 'block';
+      el.style.width    = '100%';
+      el.style.maxWidth = '100%';
+      el.style.float    = 'none';
+      el.style.clear    = 'none';
+      el = el.parentElement;
+    }
+
+    // Remove HTML width/height attributes and apply image styles
+    img.removeAttribute('width');
+    img.removeAttribute('height');
+    img.style.display   = 'block';
+    img.style.width     = '100%';
+    img.style.height    = 'auto';
+    img.style.maxHeight = '60vh';
+    img.style.margin    = '0';
+
+    // Caption full-width below
+    const caption = img.nextElementSibling;
+    if (caption && caption.matches('.thumbcaption, figcaption')) {
+      caption.style.width = '100%';
+    }
+    const captionInContainer = container?.querySelector('.thumbcaption, figcaption');
+    if (captionInContainer) captionInContainer.style.width = '100%';
+  });
+}
+
 function collapseLeadSection(root) {
   const leadBody = root.querySelector('.lead-body');
   if (!leadBody) return;
@@ -1001,6 +1065,9 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
 
   /* Populate and truncate section link lists */
   renderChipLists(root);
+
+  /* Full-width body images */
+  processBodyImages(root);
 
   /* Collapse tall infoboxes */
   collapseLeadSection(root);
