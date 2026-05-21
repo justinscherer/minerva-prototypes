@@ -870,22 +870,63 @@ function processBodyImages(root) {
 }
 
 function collapseLeadSection(root) {
+  // NOTE: collapseInfoboxes must run before this so infobox is already
+  // wrapped + collapsed when we measure heights.
   const leadBody = root.querySelector('.lead-body');
   if (!leadBody) return;
 
   const firstP = leadBody.querySelector('p');
   if (!firstP) return;
 
-  const leadRect  = leadBody.getBoundingClientRect();
-  const pRect     = firstP.getBoundingClientRect();
-  let collapseHeight = Math.round(pRect.bottom - leadRect.top);
+  const leadRect       = leadBody.getBoundingClientRect();
+  const pRect          = firstP.getBoundingClientRect();
+  const firstParaBottom = Math.round(pRect.bottom - leadRect.top);
+  const firstParaWords  = firstP.textContent.trim().split(/\s+/).filter(Boolean).length;
 
-  const firstParaWords = firstP.textContent.trim().split(/\s+/).length;
-  if (firstParaWords > 300) {
-    collapseHeight = Math.round(collapseHeight * 300 / firstParaWords);
+  let collapseHeight;
+
+  if (firstParaWords >= 300) {
+    // Truncate within first paragraph at 300 words
+    collapseHeight = Math.round(firstParaBottom * 300 / firstParaWords);
+  } else {
+    // First para is short — show it fully, plus infobox (already collapsed),
+    // then truncate any post-infobox content to reach 300 total visible words.
+    const infoboxEl = leadBody.querySelector('.infobox-wrap') ||
+                      leadBody.querySelector('.infobox, table.infobox');
+
+    if (infoboxEl) {
+      const wrapRect        = infoboxEl.getBoundingClientRect();
+      const afterInfoboxTop = Math.round(wrapRect.bottom - leadRect.top);
+
+      // Words in siblings after the infobox
+      const wordsNeeded = 300 - firstParaWords;
+      let postWords = 0;
+      let sib = infoboxEl.nextElementSibling;
+      while (sib) {
+        postWords += sib.textContent.trim().split(/\s+/).filter(Boolean).length;
+        sib = sib.nextElementSibling;
+      }
+
+      if (postWords === 0 || wordsNeeded <= 0) {
+        // Nothing after infobox (or budget already met) — cut right after it
+        collapseHeight = afterInfoboxTop;
+      } else if (wordsNeeded >= postWords) {
+        // All post-infobox content fits within 300-word budget — no collapse needed
+        return;
+      } else {
+        // Truncate post-infobox content proportionally
+        const postHeight       = leadBody.scrollHeight - afterInfoboxTop;
+        const postTruncHeight  = Math.round(postHeight * wordsNeeded / postWords);
+        collapseHeight = afterInfoboxTop + postTruncHeight;
+      }
+    } else {
+      // No infobox — truncate full lead at 300 words
+      const totalWords = leadBody.textContent.trim().split(/\s+/).filter(Boolean).length;
+      if (totalWords <= 300) return;
+      collapseHeight = Math.round(leadBody.scrollHeight * 300 / totalWords);
+    }
   }
 
-  // Nothing to collapse if lead fits within the cutoff
   if (leadBody.scrollHeight <= collapseHeight + 40) return;
 
   const wrap = document.createElement('div');
@@ -1075,9 +1116,9 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
   /* Full-width body images */
   processBodyImages(root);
 
-  /* Collapse tall infoboxes */
-  collapseLeadSection(root);
+  /* Collapse tall infoboxes first, then lead (lead measures infobox height) */
   collapseInfoboxes(root);
+  collapseLeadSection(root);
 }
 
 /* ────────────────────────────────────────────────────────────
