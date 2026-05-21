@@ -803,63 +803,69 @@ function processBodyImages(root) {
   root.querySelectorAll('.art.body img').forEach(img => {
     const src = img.getAttribute('src') || '';
 
-    // Skip gallery and infobox images
+    // Skip gallery, infobox, table-cell images (table layout breaks if we touch td/th)
     if (img.closest('.gallery-scroll')) return;
     if (img.closest('.infobox, table.infobox, .taxobox, .sidebar')) return;
+    if (img.closest('td, th')) return;
     if (isDecorative(src)) return;
 
-    // Size threshold: use URL-encoded width (e.g. /250px-)
+    // Size threshold via URL-encoded width (e.g. /250px-)
     const m = src.match(/\/(\d+)px-/);
     if (m && parseInt(m[1], 10) < 50) return;
 
     const artBody = img.closest('.art.body');
     if (!artBody) return;
 
-    // Find known floated wrapper (may be null for standalone imgs)
-    const container = img.closest('.thumb, .tright, .tleft, figure');
+    // Find topEl: the direct child of artBody that contains this img
+    let topEl = img;
+    while (topEl.parentElement && topEl.parentElement !== artBody) {
+      topEl = topEl.parentElement;
+    }
 
-    // Floated thumbs: move after next <p> sibling
-    if (container && container.matches('.thumb, .tright, .tleft')) {
-      let topEl = container;
-      while (topEl.parentElement && !topEl.parentElement.matches('.art.body')) {
-        topEl = topEl.parentElement;
-      }
-      if (topEl.parentElement && topEl.parentElement.matches('.art.body')) {
+    // If topEl is a floated wrapper, reposition after the next <p>
+    if (topEl !== img) {
+      const topFloat = window.getComputedStyle(topEl).float;
+      if (topFloat !== 'none') {
         let nextP = topEl.nextElementSibling;
         while (nextP && nextP.tagName !== 'P') nextP = nextP.nextElementSibling;
         if (nextP) nextP.insertAdjacentElement('afterend', topEl);
       }
+      // Make wrapper span full content width
+      topEl.style.float    = 'none';
+      topEl.style.clear    = 'none';
+      topEl.style.width    = '100%';
+      topEl.style.maxWidth = '100%';
+      topEl.style.margin   = '16px 0';
     }
 
-    // Walk every ancestor from img up to (not including) .art.body —
-    // make each block-level and clear inline width constraints so nothing
-    // in the chain can clamp the image narrower than the viewport.
+    // Walk intermediate ancestors (img.parentElement → topEl, exclusive):
+    // - clear any inline width (e.g. thumbinner style="width:222px")
+    // - override CSS max-width: 220px via inline max-width: 100%
+    // - make <a> and other inline elements block so img can fill them
     let el = img.parentElement;
-    while (el && el !== artBody) {
+    while (el && el !== topEl && el !== artBody) {
       el.style.display  = 'block';
-      el.style.width    = '100%';
-      el.style.maxWidth = '100%';
       el.style.float    = 'none';
       el.style.clear    = 'none';
+      el.style.width    = '';       // removes inline width constraint
+      el.style.maxWidth = '100%';   // overrides CSS class max-width: 220px
+      el.style.margin   = '0';
       el = el.parentElement;
     }
 
-    // Remove HTML width/height attributes and apply image styles
+    // Apply image styles
     img.removeAttribute('width');
     img.removeAttribute('height');
     img.style.display   = 'block';
     img.style.width     = '100%';
+    img.style.maxWidth  = '100%';
     img.style.height    = 'auto';
     img.style.maxHeight = '60vh';
-    img.style.margin    = '0';
+    img.style.margin    = topEl === img ? '16px 0' : '0';
 
-    // Caption full-width below
-    const caption = img.nextElementSibling;
-    if (caption && caption.matches('.thumbcaption, figcaption')) {
-      caption.style.width = '100%';
-    }
-    const captionInContainer = container?.querySelector('.thumbcaption, figcaption');
-    if (captionInContainer) captionInContainer.style.width = '100%';
+    // Caption full-width
+    const captionEl = topEl.querySelector('.thumbcaption, figcaption');
+    if (captionEl) captionEl.style.width = '100%';
   });
 }
 
