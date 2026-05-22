@@ -2103,8 +2103,17 @@ function openCard(title, wx, wy, lang, fromThumb, parentCardTitle) {
       ppCardMap.set(title, { x: wx, y: wy, logicalX: wx / _zs, logicalY: wy / _zs, anchor, animating: false, parentCardTitle: parentCardTitle || null }); }
   }
 
-  card.querySelector('.pp-close-btn').addEventListener('click', () => removeCard(title));
-  card.querySelector('.pp-readmore').addEventListener('click', e => { e.preventDefault(); navigateToArticle(title); });
+  card.querySelector('.pp-close-btn').addEventListener('click', e => { e.stopPropagation(); removeCard(title); });
+  card.querySelector('.pp-readmore').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); navigateToArticle(title); });
+
+  // At zoom -1/-2 the card is a compact thumb or dot — tapping it zooms back to
+  // full view and centres on this card
+  card.addEventListener('click', () => {
+    if (ppZoomLevel === 0) return;
+    ppCurrentTitle = title;
+    ppUserHasPanned = false;
+    setZoomLevel(0);
+  });
 
   // Count this card's loading tasks globally: 1 summary + intro links batch + 1 connections fetch
   ppBeginLoad(2); // summary + connections; node batch added after intro links resolve
@@ -2649,7 +2658,17 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
     if (img.complete && img.naturalWidth) bloom();
 
     el.style.cursor = 'pointer';
-    el.addEventListener('click', () => showPagePreview(nodeTitle, el));
+    el.addEventListener('click', () => {
+      // At zoom -1/-2, if this node's article has already been opened as a card,
+      // zoom back to full view and centre on that card instead of re-opening
+      if (ppZoomLevel !== 0 && ppCardMap.has(nodeTitle)) {
+        ppCurrentTitle = nodeTitle;
+        ppUserHasPanned = false;
+        setZoomLevel(0);
+      } else {
+        showPagePreview(nodeTitle, el);
+      }
+    });
   });
 
 }
