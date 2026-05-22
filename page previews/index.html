@@ -404,6 +404,7 @@
       pointer-events: auto;
       cursor: grab;
       user-select: none;
+      touch-action: none;
       animation: pp-backdrop-in 0.22s ease-out;
     }
     #pp-backdrop.pp-dragging { cursor: grabbing; }
@@ -608,6 +609,18 @@
     a.pp-active-link { background: rgba(51,102,204,0.1); }
 
     /* ── Zoom control button ───────────────────────────────── */
+    #pp-close-graph {
+      position: fixed; top: 16px; right: 16px; z-index: 410;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f8f9fa; border: 1px solid #72777d;
+      border-radius: 2px; cursor: pointer;
+      color: #202122; font-size: 16px; line-height: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+      transition: background 0.1s;
+    }
+    #pp-close-graph:hover { background: #eaecf0; }
+    #pp-close-graph:active { background: #dadde3; }
     #pp-zoom-ctrl {
       position: fixed; bottom: 66px; right: 16px; z-index: 406;
       display: flex; flex-direction: row;
@@ -1440,49 +1453,91 @@ function ensureCanvas() {
   backdrop.id = 'pp-backdrop';
 
   // ── Pan-by-drag (mouse + touch) + pinch-to-zoom ─────────────
-  let dragging = false, startX = 0, startY = 0, focusX0 = 0, focusY0 = 0;
+  // Pan works anywhere in the graph area (cards, nodes, dots, empty space).
+  // A movement threshold separates drag-to-pan from tap-to-interact.
+  let dragging = false, panMoved = false, startX = 0, startY = 0, focusX0 = 0, focusY0 = 0;
   let pinching = false, pinchStartDist = 0, pinchLevelAtStart = 0;
+  let mouseDidPan = false; // used to swallow the post-drag click
 
+  const PAN_THRESHOLD = 6; // px before drag is confirmed as a pan
   const getPinchDist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
+  // Returns true when the event target is inside the pannable graph area
+  // (excludes fixed UI controls that must handle their own interactions)
+  const isGraphArea = el => {
+    for (let cur = el; cur && cur !== document.body; cur = cur.parentElement) {
+      const id = cur.id;
+      if (id === 'pp-history-bar' || id === 'pp-close-graph' || id === 'pp-zoom-ctrl') return false;
+    }
+    return true;
+  };
+
   const beginDrag = (cx, cy) => {
-    dragging = true;
+    dragging = true; panMoved = false;
     startX = cx; startY = cy;
     focusX0 = ppFocusX; focusY0 = ppFocusY;
-    backdrop.classList.add('pp-dragging');
+    document.body.style.userSelect = 'none';
   };
   const moveDrag = (cx, cy) => {
     if (!dragging) return;
+    const dx = cx - startX, dy = cy - startY;
+    if (!panMoved) {
+      if (Math.hypot(dx, dy) < PAN_THRESHOLD) return;
+      panMoved = true;
+      mouseDidPan = true;
+      document.body.style.cursor = 'grabbing';
+    }
     ppUserHasPanned = true;
-    ppFocusX = focusX0 - (cx - startX);
-    ppFocusY = focusY0 - (cy - startY);
+    ppFocusX = focusX0 - dx;
+    ppFocusY = focusY0 - dy;
     applyCanvasTransform(false);
   };
-  const endDrag = () => { dragging = false; backdrop.classList.remove('pp-dragging'); };
+  const endDrag = () => {
+    const wasPanning = panMoved;
+    dragging = false; panMoved = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    // If no movement happened mouseDidPan is already false; if it happened
+    // let onClickCapture reset it (with safety timeout fallback)
+    if (!wasPanning) mouseDidPan = false;
+    else setTimeout(() => { mouseDidPan = false; }, 300);
+  };
 
-  backdrop.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
+  // Mouse: listen at window level so drag works starting from any element
+  const onMouseDown = e => {
+    if (e.button !== 0 || !isGraphArea(e.target)) return;
     beginDrag(e.clientX, e.clientY);
-    e.preventDefault();
-  });
-  backdrop.addEventListener('touchstart', e => {
+  };
+  const onMouseMove = e => moveDrag(e.clientX, e.clientY);
+  const onMouseUp   = () => endDrag();
+
+  // Swallow the click that fires after a mouse drag-pan (capture phase runs first)
+  const onClickCapture = e => {
+    if (mouseDidPan && isGraphArea(e.target)) {
+      e.stopPropagation();
+      e.preventDefault();
+      mouseDidPan = false;
+    }
+  };
+
+  // Touch: listen on document so all elements are covered
+  const onDocTouchStart = e => {
+    if (!isGraphArea(e.target)) return;
     if (e.touches.length === 1) {
       pinching = false;
       beginDrag(e.touches[0].clientX, e.touches[0].clientY);
     } else if (e.touches.length === 2) {
-      dragging = false;
+      dragging = false; panMoved = false;
       pinching = true;
       pinchStartDist = getPinchDist(e.touches);
       pinchLevelAtStart = ppZoomLevel;
+      e.preventDefault(); // prevent browser native pinch-zoom
     }
-    e.preventDefault();
-  }, { passive: false });
-
-  const onMouseMove = e => moveDrag(e.clientX, e.clientY);
+  };
   const onTouchMove = e => {
     if (e.touches.length === 1 && dragging && !pinching) {
       moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      e.preventDefault();
+      if (panMoved) e.preventDefault(); // lock in pan, suppress synthetic click
     } else if (e.touches.length === 2 && pinching) {
       const ratio = getPinchDist(e.touches) / pinchStartDist;
       const newLevel = ratio > 1.35 ? Math.min(0, pinchLevelAtStart + 1)
@@ -1492,22 +1547,29 @@ function ensureCanvas() {
       e.preventDefault();
     }
   };
-  const onMouseUp  = () => endDrag();
   const onTouchEnd = e => {
     if (e.touches.length < 2) pinching = false;
     if (e.touches.length === 0) endDrag();
   };
 
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup',   onMouseUp);
-  window.addEventListener('touchmove', onTouchMove, { passive: false });
-  window.addEventListener('touchend',  onTouchEnd);
+  window.addEventListener('mousedown',  onMouseDown);
+  window.addEventListener('mousemove',  onMouseMove);
+  window.addEventListener('mouseup',    onMouseUp);
+  window.addEventListener('touchmove',  onTouchMove,      { passive: false });
+  window.addEventListener('touchend',   onTouchEnd);
+  document.addEventListener('touchstart',  onDocTouchStart, { passive: false });
+  document.addEventListener('click',       onClickCapture,  true);
 
   ppPanCleanup = () => {
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup',   onMouseUp);
-    window.removeEventListener('touchmove', onTouchMove);
-    window.removeEventListener('touchend',  onTouchEnd);
+    window.removeEventListener('mousedown',  onMouseDown);
+    window.removeEventListener('mousemove',  onMouseMove);
+    window.removeEventListener('mouseup',    onMouseUp);
+    window.removeEventListener('touchmove',  onTouchMove);
+    window.removeEventListener('touchend',   onTouchEnd);
+    document.removeEventListener('touchstart',  onDocTouchStart);
+    document.removeEventListener('click',       onClickCapture, true);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   };
   // ─────────────────────────────────────────────────────────────
 
@@ -1520,6 +1582,13 @@ function ensureCanvas() {
   document.body.appendChild(canvas);
 
   // Zoom control buttons
+  const closeGraph = document.createElement('button');
+  closeGraph.id = 'pp-close-graph';
+  closeGraph.setAttribute('aria-label', 'Close graph');
+  closeGraph.innerHTML = '&#x2715;';
+  closeGraph.addEventListener('click', closePagePreview);
+  document.body.appendChild(closeGraph);
+
   const zoomCtrl = document.createElement('div');
   zoomCtrl.id = 'pp-zoom-ctrl';
   zoomCtrl.innerHTML = '<button id="pp-zoom-in" aria-label="Zoom in">+</button><button id="pp-zoom-out" aria-label="Zoom out">−</button>';
@@ -1805,6 +1874,7 @@ function clearCanvas() {
   ppPanCleanup?.(); ppPanCleanup = null;
   document.getElementById('pp-backdrop')?.remove();
   document.getElementById('pp-canvas')?.remove();
+  document.getElementById('pp-close-graph')?.remove();
   document.getElementById('pp-zoom-ctrl')?.remove();
   ppCardMap.clear();
   ppThumbMap.clear();
