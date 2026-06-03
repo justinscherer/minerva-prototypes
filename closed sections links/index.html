@@ -545,7 +545,7 @@ function parseArticleHTML(rawHTML) {
   output.querySelectorAll(
     '.mw-editsection, .noprint, .navbox, .navigation-not-searchable, ' +
     '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription, ' +
-    '#toc, .toc, .mw-toc-container'
+    '#toc, .toc, .mw-toc-container, .nomobile'
   ).forEach(el => el.remove());
 
   // Modern Wikipedia wraps headings in <div class="mw-heading mw-heading2">
@@ -661,13 +661,15 @@ function collectSubsections(sectionHTML) {
   return out;
 }
 
-function collectSectionLinks(sectionHTML) {
+function collectSectionLinks(sectionHTML, skipInternalClean = false) {
   if (!sectionHTML) return [];
   const parser = new DOMParser();
   const doc    = parser.parseFromString(sectionHTML, 'text/html');
 
   // Remove citations, infoboxes, navboxes so we don't pick up their links
-  doc.querySelectorAll('sup, .reference, .reflist, .infobox, table.infobox, .taxobox, .sidebar, .navbox').forEach(el => el.remove());
+  if (!skipInternalClean) {
+    doc.querySelectorAll('sup, .reference, .reflist, .infobox, table.infobox, .taxobox, .sidebar, .navbox').forEach(el => el.remove());
+  }
 
   const seen = new Set();
   const out  = [];
@@ -990,13 +992,17 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
         ${cleanLeadHTML ? `<div class="art body">${cleanLeadHTML}</div>` : ''}
       </div>
 
-      ${infoboxHTML ? `
+      ${infoboxHTML ? (() => {
+        const qfLinks = collectSectionLinks(infoboxHTML, true).map(l => ({ type: 'link', ...l }));
+        const qfAttr  = qfLinks.length > 0 ? ` data-items="${esc(JSON.stringify(qfLinks))}"` : '';
+        return `
       <div class="acc-section acc-section--quick-facts">
         <div class="acc-header">
           <button class="acc-btn" aria-expanded="false">
             <span class="acc-chevron">${SVG.chevron}</span>
             <div class="acc-title-group">
               <span class="acc-title">Quick facts</span>
+              ${qfLinks.length > 0 ? `<div class="acc-link-list"${qfAttr}></div>` : ''}
             </div>
           </button>
           <div class="acc-divider"></div>
@@ -1004,7 +1010,8 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
         <div class="acc-body">
           <div class="art body">${infoboxHTML}</div>
         </div>
-      </div>` : ''}
+      </div>`;
+      })() : ''}
 
       <div class="acc-sections">${renderAccordions(sections)}</div>
 
