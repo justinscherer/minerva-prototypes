@@ -125,7 +125,7 @@
     .infochip {
       display: inline-flex; align-items: center; gap: 4px;
       background: #e8eeff; color: #3366cc;
-      border-radius: 9999px; padding: 1px 6px;
+      border-radius: 4px; padding: 2px 6px;
       font-size: 12px; line-height: 20px;
       cursor: pointer; text-decoration: none; white-space: nowrap;
     }
@@ -212,7 +212,8 @@
     .art table.infobox p { font-size: 14.4px; line-height: 20px; margin-bottom: 4px; }
     .art table.infobox p:last-child { margin-bottom: 0; }
 
-    /* Infobox collapse */
+
+    /* Lead section collapse */
     .infobox-wrap { position: relative; margin-bottom: 12px; }
     .infobox-wrap.collapsed { max-height: 750px; overflow: hidden; margin-bottom: 0; }
     .infobox-fade {
@@ -283,6 +284,7 @@
 
     /* ── Accordion sections ────────────────────────────────── */
     .acc-section {}
+    .acc-section--quick-facts { margin-bottom: 0; }
     .acc-header {
       background: #fff;
     }
@@ -300,8 +302,9 @@
       width: 16px; height: 16px; flex-shrink: 0; margin-top: 7px;
       color: #54595d; transition: transform 0.15s ease;
       display: flex; align-items: center; justify-content: center;
+      transform: rotate(-90deg);
     }
-    .acc-section.open .acc-chevron { transform: rotate(90deg); }
+    .acc-section.open .acc-chevron { transform: rotate(0deg); }
     .acc-title-group { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .acc-title {
       font-family: Georgia, 'Times New Roman', serif;
@@ -319,10 +322,10 @@
     .acc-link-list::-webkit-scrollbar { display: none; }
     .acc-chip {
       display: inline-flex; align-items: center;
-      background: transparent; color: #3366cc;
-      border: 1px solid #dadde3;
-      border-radius: 9999px; padding: 6px 12px;
-      font-size: 12px; line-height: 16px; min-height: 32px;
+      background: transparent; color: #101418;
+      border: 1px solid #101418;
+      border-radius: 4px; padding: 3px 12px;
+      font-size: 12px; line-height: 16px; min-height: 24px;
       cursor: pointer; text-decoration: none;
       white-space: nowrap; flex-shrink: 0;
       font-style: normal;
@@ -359,7 +362,7 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       line-height: 19.6px;
     }
-    .foot-lastedit-chev { width: 16px; height: 16px; color: #54595d; flex-shrink: 0; }
+    .foot-lastedit-chev { width: 16px; height: 16px; color: #54595d; flex-shrink: 0; transform: rotate(-90deg); }
 
     /* Related pages */
     .foot-related { background: #eaecf0; padding: 42px 16px 0; }
@@ -468,36 +471,34 @@ const VITAL_ARTICLES = ["Aristotle", "Simone de Beauvoir", "Chanakya", "Confuciu
 
 const SVG = {
   share: `<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
-    <path d="M11 2.5 L18 7.5 L11 12.5 V9.5 C5.5 9.5 2.5 12 2 17 C1.5 12 3 5 11 5.5 Z"/>
+    <path d="M19 7.293v1.414l-5.982 6L11.31 14v-2.887c-1.53.336-3.077 1.392-4.524 2.772-1.732 1.652-3.132 3.58-3.986 4.716L1 18c0-1.521.628-4.697 2.299-7.517 1.561-2.634 4.116-5.076 8.01-5.436V2l1.709-.707 5.982 6ZM13.31 7h-1c-3.526 0-5.824 2.028-7.29 4.503a14.894 14.894 0 0 0-1.207 2.606 26.29 26.29 0 0 1 1.593-1.671C7.251 10.678 9.652 9 12.31 9h1v2.586L16.895 8 13.31 4.414V7Z"/>
   </svg>`,
 
-  dots: `<svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor">
-    <circle cx="2" cy="2"  r="1.5"/>
-    <circle cx="2" cy="7"  r="1.5"/>
-    <circle cx="2" cy="12" r="1.5"/>
+  dots: `<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M5 11.5H2v-3h3v3Zm6.5 0h-3v-3h3v3Zm6.5 0h-3v-3h3v3Z"/>
   </svg>`,
 
-  translate: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.119 8.47699C6.40273 8.23124 5.71877 7.89983 5.082 7.48999C6.06312 6.43622 6.74255 5.13781 7.049 3.73099H8.4V2.79999H5.117C5.08012 2.66603 5.03333 2.53501 4.977 2.40799C4.809 1.95299 4.62 1.39999 4.62 1.39999L3.591 1.74999C3.591 1.74999 3.871 2.37299 4.011 2.79999H0V3.73099H1.505C1.81174 5.14359 2.50204 6.44425 3.5 7.48999C2.41846 8.1621 1.2371 8.65827 0 8.95999C0.261333 9.34266 0.464333 9.66466 0.609 9.92599C1.89539 9.49472 3.12289 8.90449 4.263 8.16899C5.03758 8.68632 5.87501 9.10268 6.755 9.40799L7.119 8.47699ZM12.992 12.6H14L10.808 4.55699H9.485L6.3 12.586H7.266C7.36825 12.5891 7.46802 12.5542 7.546 12.488C7.61373 12.4316 7.6666 12.3595 7.7 12.278L8.4 10.5H11.9L12.551 12.299C12.5864 12.3832 12.6416 12.4577 12.712 12.516C12.7925 12.5761 12.8917 12.6058 12.992 12.6ZM10.423 6.64999L11.529 9.58299L8.778 9.58999L9.884 6.65699L10.017 6.26499C10.0637 6.11566 10.108 5.95466 10.15 5.78199C10.2247 6.07619 10.3159 6.36598 10.423 6.64999ZM5.978 3.73099H2.541C2.80772 4.91172 3.40499 5.99214 4.263 6.84599C5.1535 6.01811 5.75467 4.92619 5.978 3.73099Z" fill="#3366CC"/></svg>`,
-
-  comment: `<svg width="14" height="14" viewBox="0 0 20 20" fill="#3366CC"><path d="M3 2h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6l-4 4V3a1 1 0 0 1 1-1z"/></svg>`,
-
-  chevron: `<svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M7 5 L13 10 L7 15" stroke="#54595d" stroke-width="1.5"
-          stroke-linecap="round" stroke-linejoin="round"/>
+  translate: `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+    <path d="m17.835 19-1.248-3h-4.174l-1.248 3.001H9l4.577-11.005h1.846L20 19h-2.165Zm-4.59-5h2.51L14.5 10.982 13.245 14ZM7.618 3H12v2H9.991a8.516 8.516 0 0 1-1.423 4.02c-.16.239-.336.474-.528.707.423.244.882.482 1.379.711l.908.42-.839 1.816-.907-.42a17.952 17.952 0 0 1-2.026-1.09c-1.255.979-2.912 1.8-5.076 2.31l-.973.228-.458-1.946.973-.23c1.631-.383 2.885-.954 3.85-1.608C3.29 8.527 2.317 6.884 2.065 5H0V3h5.382l-.724-1.447 1.79-.895L7.617 3ZM4.094 5c.243 1.282.974 2.489 2.29 3.586A6.544 6.544 0 0 0 7.98 5H4.094Z"/>
   </svg>`,
 
-  history: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <path d="M3.5 7 A7 7 0 1 1 3 10" stroke="#54595d" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M3.5 3 V7 H7.5"         stroke="#54595d" stroke-width="1.5"
-          stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M10 6.5 V10.5 L13 12.5" stroke="#54595d" stroke-width="1.5" stroke-linecap="round"/>
+  comment: `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M15 16h-4.685l-4.742 3.32L4 18.5V16H1V5h14v11Zm-12-2h3v2.58L9.685 14H13V7H3v7Z"/>
+    <path d="M19 13h-2V3H5V1h14v12Z"/>
   </svg>`,
 
-  extLink: `<svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-    <path d="M8 1h5v5" stroke="#3366cc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M13 1 L6 8"  stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M6 3 H2 a1 1 0 0 0-1 1 V12 a1 1 0 0 0 1 1 H10 a1 1 0 0 0 1-1 V8"
-          stroke="#3366cc" stroke-width="1.5" stroke-linecap="round"/>
+  chevron: `<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <path d="m16.707 8.017-6 5.983H9.293l-6-5.983 1.414-1.414L10 11.896l5.293-5.293 1.414 1.414Z"/>
+  </svg>`,
+
+  history: `<svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M10 1a9 9 0 0 1 1 17.945V16.93A7.001 7.001 0 0 0 10 3a7 7 0 0 0-4 12.743V13h2.001L8 18l-1 1H2v-2l2.346-.001A8.97 8.97 0 0 1 1 10a9 9 0 0 1 9-9Z"/>
+    <path d="M11 10h3.5v2H9V6h2v4Z"/>
+  </svg>`,
+
+  extLink: `<svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M8 7H3v10h10v-5h2v7H1V5h7v2Z"/>
+    <path d="M19.001 2 19 8h-2V4.415l-9 9L6.586 12l9-8.999L12 3V1h6.001l1 1Z"/>
   </svg>`,
 };
 
@@ -871,61 +872,25 @@ function processBodyImages(root) {
 }
 
 function collapseLeadSection(root) {
-  // NOTE: collapseInfoboxes must run before this so infobox is already
-  // wrapped + collapsed when we measure heights.
   const leadBody = root.querySelector('.lead-body');
   if (!leadBody) return;
 
   const firstP = leadBody.querySelector('p');
   if (!firstP) return;
 
-  const leadRect       = leadBody.getBoundingClientRect();
-  const pRect          = firstP.getBoundingClientRect();
+  const leadRect        = leadBody.getBoundingClientRect();
+  const pRect           = firstP.getBoundingClientRect();
   const firstParaBottom = Math.round(pRect.bottom - leadRect.top);
   const firstParaWords  = firstP.textContent.trim().split(/\s+/).filter(Boolean).length;
 
   let collapseHeight;
 
   if (firstParaWords >= 300) {
-    // Truncate within first paragraph at 300 words
     collapseHeight = Math.round(firstParaBottom * 300 / firstParaWords);
   } else {
-    // First para is short — show it fully, plus infobox (already collapsed),
-    // then truncate any post-infobox content to reach 300 total visible words.
-    const infoboxEl = leadBody.querySelector('.infobox-wrap') ||
-                      leadBody.querySelector('.infobox, table.infobox');
-
-    if (infoboxEl) {
-      const wrapRect        = infoboxEl.getBoundingClientRect();
-      const afterInfoboxTop = Math.round(wrapRect.bottom - leadRect.top);
-
-      // Words in siblings after the infobox
-      const wordsNeeded = 300 - firstParaWords;
-      let postWords = 0;
-      let sib = infoboxEl.nextElementSibling;
-      while (sib) {
-        postWords += sib.textContent.trim().split(/\s+/).filter(Boolean).length;
-        sib = sib.nextElementSibling;
-      }
-
-      if (postWords === 0 || wordsNeeded <= 0) {
-        // Nothing after infobox (or budget already met) — cut right after it
-        collapseHeight = afterInfoboxTop;
-      } else if (wordsNeeded >= postWords) {
-        // All post-infobox content fits within 300-word budget — no collapse needed
-        return;
-      } else {
-        // Truncate post-infobox content proportionally
-        const postHeight       = leadBody.scrollHeight - afterInfoboxTop;
-        const postTruncHeight  = Math.round(postHeight * wordsNeeded / postWords);
-        collapseHeight = afterInfoboxTop + postTruncHeight;
-      }
-    } else {
-      // No infobox — truncate full lead at 300 words
-      const totalWords = leadBody.textContent.trim().split(/\s+/).filter(Boolean).length;
-      if (totalWords <= 300) return;
-      collapseHeight = Math.round(leadBody.scrollHeight * 300 / totalWords);
-    }
+    const totalWords = leadBody.textContent.trim().split(/\s+/).filter(Boolean).length;
+    if (totalWords <= 300) return;
+    collapseHeight = Math.round(leadBody.scrollHeight * 300 / totalWords);
   }
 
   if (leadBody.scrollHeight <= collapseHeight + 40) return;
@@ -953,34 +918,6 @@ function collapseLeadSection(root) {
   });
 }
 
-function collapseInfoboxes(root) {
-  root.querySelectorAll('.art .infobox').forEach(table => {
-    if (table.offsetHeight <= 750) return;
-
-    // Wrap the table in a collapse container
-    const wrap = document.createElement('div');
-    wrap.className = 'infobox-wrap collapsed';
-    table.parentNode.insertBefore(wrap, table);
-    wrap.appendChild(table);
-
-    // Gradient fade overlay — sits above the Read more button
-    const fade = document.createElement('div');
-    fade.className = 'infobox-fade';
-    wrap.appendChild(fade);
-
-    // Read more button — absolutely positioned at the bottom of the 500px window
-    const btn = document.createElement('button');
-    btn.className = 'infobox-read-more';
-    btn.textContent = 'Read more';
-    wrap.appendChild(btn);
-
-    btn.addEventListener('click', () => {
-      wrap.classList.remove('collapsed');
-      fade.remove();
-      btn.remove();
-    });
-  });
-}
 
 function renderRelated(pages) {
   if (!pages?.length) return '';
@@ -1025,6 +962,13 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
   const root   = document.getElementById('article-root');
   const images = collectImages(leadHTML, sections);
 
+  // Extract infoboxes from lead before rendering so they go into Quick facts
+  const leadDoc     = new DOMParser().parseFromString('<div>' + leadHTML + '</div>', 'text/html');
+  const leadWrapper = leadDoc.body.firstElementChild;
+  const infoboxEls  = Array.from(leadWrapper.querySelectorAll('table.infobox, .infobox'));
+  const infoboxHTML = infoboxEls.map(el => { el.remove(); return el.outerHTML; }).join('');
+  const cleanLeadHTML = leadWrapper.innerHTML;
+
   root.innerHTML = `
     <div class="article-outer">
 
@@ -1043,8 +987,24 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
 
       <div class="lead-body">
         ${firstPara ? `<div class="art body">${firstPara}</div>` : ''}
-        <div class="art body">${leadHTML}</div>
+        ${cleanLeadHTML ? `<div class="art body">${cleanLeadHTML}</div>` : ''}
       </div>
+
+      ${infoboxHTML ? `
+      <div class="acc-section acc-section--quick-facts">
+        <div class="acc-header">
+          <button class="acc-btn" aria-expanded="false">
+            <span class="acc-chevron">${SVG.chevron}</span>
+            <div class="acc-title-group">
+              <span class="acc-title">Quick facts</span>
+            </div>
+          </button>
+          <div class="acc-divider"></div>
+        </div>
+        <div class="acc-body">
+          <div class="art body">${infoboxHTML}</div>
+        </div>
+      </div>` : ''}
 
       <div class="acc-sections">${renderAccordions(sections)}</div>
 
@@ -1117,8 +1077,6 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
   /* Full-width body images */
   processBodyImages(root);
 
-  /* Collapse tall infoboxes first, then lead (lead measures infobox height) */
-  collapseInfoboxes(root);
   collapseLeadSection(root);
 }
 
