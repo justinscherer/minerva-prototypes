@@ -126,7 +126,7 @@
     .infochip {
       display: inline-flex; align-items: center; gap: 4px;
       background: #e8eeff; color: #3366cc;
-      border-radius: 9999px; padding: 1px 6px;
+      border-radius: 4px; padding: 2px 6px;
       font-size: 12px; line-height: 20px;
       cursor: pointer; text-decoration: none; white-space: nowrap;
     }
@@ -310,12 +310,26 @@
       color: #101418; font-weight: normal;
     }
     .acc-link-list {
-      font-size: 14px; line-height: 20px;
-      color: #54595d; overflow: hidden;
-      max-height: 40px; /* 2 lines */
+      display: flex; flex-wrap: nowrap;
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 6px; margin-top: 6px;
+      padding-bottom: 10px;
     }
-    .acc-link-list a { color: #3366cc; text-decoration: none; }
-    .acc-link-list a:hover { text-decoration: underline; }
+    .acc-link-list::-webkit-scrollbar { display: none; }
+    .acc-chip {
+      display: inline-flex; align-items: center;
+      background: transparent; color: #101418;
+      border: 1px solid #101418;
+      border-radius: 4px; padding: 3px 12px;
+      font-size: 12px; line-height: 16px; min-height: 24px;
+      cursor: pointer; text-decoration: none;
+      white-space: nowrap; flex-shrink: 0;
+      font-style: normal;
+    }
+    .acc-chip:hover { background: #f0f2f5; }
+    .acc-chip.is-italic { font-style: italic; }
     /* focused target in the article body */
     .art.body a:focus,
     .art.body h3:focus,
@@ -860,18 +874,21 @@
 ──────────────────────────────────────────────────────────── */
 const SVG = {
   share: `<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
-    <path d="M11 2.5 L18 7.5 L11 12.5 V9.5 C5.5 9.5 2.5 12 2 17 C1.5 12 3 5 11 5.5 Z"/>
+    <path d="M19 7.293v1.414l-5.982 6L11.31 14v-2.887c-1.53.336-3.077 1.392-4.524 2.772-1.732 1.652-3.132 3.58-3.986 4.716L1 18c0-1.521.628-4.697 2.299-7.517 1.561-2.634 4.116-5.076 8.01-5.436V2l1.709-.707 5.982 6ZM13.31 7h-1c-3.526 0-5.824 2.028-7.29 4.503a14.894 14.894 0 0 0-1.207 2.606 26.29 26.29 0 0 1 1.593-1.671C7.251 10.678 9.652 9 12.31 9h1v2.586L16.895 8 13.31 4.414V7Z"/>
   </svg>`,
 
-  dots: `<svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor">
-    <circle cx="2" cy="2"  r="1.5"/>
-    <circle cx="2" cy="7"  r="1.5"/>
-    <circle cx="2" cy="12" r="1.5"/>
+  dots: `<svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M5 11.5H2v-3h3v3Zm6.5 0h-3v-3h3v3Zm6.5 0h-3v-3h3v3Z"/>
   </svg>`,
 
-  translate: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.119 8.47699C6.40273 8.23124 5.71877 7.89983 5.082 7.48999C6.06312 6.43622 6.74255 5.13781 7.049 3.73099H8.4V2.79999H5.117C5.08012 2.66603 5.03333 2.53501 4.977 2.40799C4.809 1.95299 4.62 1.39999 4.62 1.39999L3.591 1.74999C3.591 1.74999 3.871 2.37299 4.011 2.79999H0V3.73099H1.505C1.81174 5.14359 2.50204 6.44425 3.5 7.48999C2.41846 8.1621 1.2371 8.65827 0 8.95999C0.261333 9.34266 0.464333 9.66466 0.609 9.92599C1.89539 9.49472 3.12289 8.90449 4.263 8.16899C5.03758 8.68632 5.87501 9.10268 6.755 9.40799L7.119 8.47699ZM12.992 12.6H14L10.808 4.55699H9.485L6.3 12.586H7.266C7.36825 12.5891 7.46802 12.5542 7.546 12.488C7.61373 12.4316 7.6666 12.3595 7.7 12.278L8.4 10.5H11.9L12.551 12.299C12.5864 12.3832 12.6416 12.4577 12.712 12.516C12.7925 12.5761 12.8917 12.6058 12.992 12.6ZM10.423 6.64999L11.529 9.58299L8.778 9.58999L9.884 6.65699L10.017 6.26499C10.0637 6.11566 10.108 5.95466 10.15 5.78199C10.2247 6.07619 10.3159 6.36598 10.423 6.64999ZM5.978 3.73099H2.541C2.80772 4.91172 3.40499 5.99214 4.263 6.84599C5.1535 6.01811 5.75467 4.92619 5.978 3.73099Z" fill="#3366CC"/></svg>`,
+  translate: `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+    <path d="m17.835 19-1.248-3h-4.174l-1.248 3.001H9l4.577-11.005h1.846L20 19h-2.165Zm-4.59-5h2.51L14.5 10.982 13.245 14ZM7.618 3H12v2H9.991a8.516 8.516 0 0 1-1.423 4.02c-.16.239-.336.474-.528.707.423.244.882.482 1.379.711l.908.42-.839 1.816-.907-.42a17.952 17.952 0 0 1-2.026-1.09c-1.255.979-2.912 1.8-5.076 2.31l-.973.228-.458-1.946.973-.23c1.631-.383 2.885-.954 3.85-1.608C3.29 8.527 2.317 6.884 2.065 5H0V3h5.382l-.724-1.447 1.79-.895L7.617 3ZM4.094 5c.243 1.282.974 2.489 2.29 3.586A6.544 6.544 0 0 0 7.98 5H4.094Z"/>
+  </svg>`,
 
-  comment: `<svg width="14" height="14" viewBox="0 0 20 20" fill="#3366CC"><path d="M3 2h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6l-4 4V3a1 1 0 0 1 1-1z"/></svg>`,
+  comment: `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+    <path d="M15 16h-4.685l-4.742 3.32L4 18.5V16H1V5h14v11Zm-12-2h3v2.58L9.685 14H13V7H3v7Z"/>
+    <path d="M19 13h-2V3H5V1h14v12Z"/>
+  </svg>`,
 
   chevron: `<svg width="16" height="16" viewBox="0 0 20 20" fill="none">
     <path d="M7 5 L13 10 L7 15" stroke="#54595d" stroke-width="1.5"
@@ -935,7 +952,7 @@ function parseArticleHTML(rawHTML) {
   // Remove noise
   output.querySelectorAll(
     '.mw-editsection, .noprint, .navbox, .navigation-not-searchable, ' +
-    '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription, .toc'
+    '.mbox-small, .ambox, .tmbox, .sistersitebox, style, .shortdescription, .toc, .nomobile'
   ).forEach(el => el.remove());
 
   // Modern Wikipedia wraps headings in <div class="mw-heading mw-heading2">
@@ -1108,9 +1125,7 @@ function renderAccordions(sections) {
   }).join('');
 }
 
-function measureAndTruncateLinkLists(root) {
-  // Tag every sub-heading in each section body so we can scroll/focus to it later.
-  // tabIndex=-1 makes headings programmatically focusable without entering tab order.
+function renderChipLists(root) {
   root.querySelectorAll('.acc-section').forEach(sec => {
     const body = sec.querySelector('.acc-body .art.body');
     if (!body) return;
@@ -1125,35 +1140,14 @@ function measureAndTruncateLinkLists(root) {
     try { items = JSON.parse(container.dataset.items); } catch(_) { return; }
     if (!items.length) return;
 
-    function buildHTML(visible, remaining) {
-      const parts = visible.map(item => {
-        if (item.type === 'subsection') {
-          return `<a href="#" data-subhead-idx="${item.idx}">${esc(item.text)}</a>`;
-        }
-        const style = item.isItalic ? ' style="font-style:italic"' : '';
-        return `<a href="${esc(item.href)}"${style}>${esc(item.text)}</a>`;
-      });
-      if (remaining > 0) parts.push(`and ${remaining} more...`);
-      return parts.join(' \u2022 ');
-    }
+    container.innerHTML = items.map(item => {
+      if (item.type === 'subsection') {
+        return `<a class="acc-chip" href="#" data-subhead-idx="${item.idx}">${esc(item.text)}</a>`;
+      }
+      const italic = item.isItalic ? ' is-italic' : '';
+      return `<a class="acc-chip${italic}" href="${esc(item.href)}">${esc(item.text)}</a>`;
+    }).join('');
 
-    const twoLineH = 41; // 2 × 20px line-height + 1px tolerance
-
-    // Test if all items fit in 2 lines
-    container.innerHTML = buildHTML(items, 0);
-    if (container.scrollHeight <= twoLineH) {
-      wireAccLinks(container);
-      return;
-    }
-
-    // Binary search: find max count that fits in 2 lines
-    let lo = 1, hi = items.length - 1;
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      container.innerHTML = buildHTML(items.slice(0, mid), items.length - mid);
-      if (container.scrollHeight <= twoLineH) lo = mid; else hi = mid - 1;
-    }
-    container.innerHTML = buildHTML(items.slice(0, lo), items.length - lo);
     wireAccLinks(container);
   });
 }
@@ -1372,7 +1366,7 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
   document.documentElement.style.setProperty('--control-bar-h', bar.offsetHeight + 'px');
 
   /* Populate and truncate section link lists */
-  measureAndTruncateLinkLists(root);
+  renderChipLists(root);
 
   /* Collapse tall infoboxes */
   collapseInfoboxes(root);
@@ -2091,6 +2085,110 @@ function findFreeCardPos(preferX, preferY, excludeTitle) {
   return { wx: preferX, wy: preferY };
 }
 
+// ── Post-layout overlap resolver ──────────────────────────────
+// Debounce: fires 350 ms after the last call, so it runs once after
+// all bloom animations and card-open transitions settle.
+let _resolveTimer = null;
+function scheduleOverlapResolve() {
+  clearTimeout(_resolveTimer);
+  _resolveTimer = setTimeout(() => {
+    _resolveTimer = null;
+    if (document.getElementById('pp-canvas')) resolveGraphOverlaps();
+  }, 350);
+}
+
+// Read every element's real DOM bounding box, then push overlapping
+// thumbs away from cards (cards are fixed — only thumbs move).
+function resolveGraphOverlaps() {
+  const PAD      = 12;   // minimum gap (px) between any two boxes
+  const MAX_ITER = 40;
+  const _zs      = ZOOM_POSITION_SCALES[-ppZoomLevel];
+
+  const items = [];
+
+  // Cards: fixed anchors — read actual offsetWidth/offsetHeight
+  for (const [, card] of ppCardMap) {
+    if (card.animating) continue;
+    const cardEl = card.anchor && card.anchor.querySelector('.pp-card');
+    if (!cardEl) continue;
+    const w = cardEl.offsetWidth  > 0 ? cardEl.offsetWidth  : CARD_W;
+    const h = cardEl.offsetHeight > 0 ? cardEl.offsetHeight : CARD_H_EST;
+    items.push({ kind: 'card',
+      cx: card.x, cy: card.y,   // anchor = center of card
+      hw: w / 2,  hh: h / 2,
+      fixed: true, ref: card });
+  }
+
+  // Thumbs: movable — read actual element size
+  for (const [, th] of ppThumbMap) {
+    if (!th.bloomed || !th.el || !document.contains(th.el)) continue;
+    const w = th.el.offsetWidth  > 0 ? th.el.offsetWidth  : th.size;
+    const h = th.el.offsetHeight > 0 ? th.el.offsetHeight : th.cardH;
+    items.push({ kind: 'thumb',
+      cx: th.x + w / 2, cy: th.y + h / 2,
+      hw: w / 2, hh: h / 2,
+      fixed: false, ref: th,
+      ew: w, eh: h });
+  }
+
+  if (items.length < 2) return;
+
+  // Iterative axis-of-minimum-penetration separation
+  for (let iter = 0; iter < MAX_ITER; iter++) {
+    let anyOverlap = false;
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i], b = items[j];
+        if (a.fixed && b.fixed) continue;
+
+        const ox = (a.hw + b.hw + PAD) - Math.abs(b.cx - a.cx);
+        const oy = (a.hh + b.hh + PAD) - Math.abs(b.cy - a.cy);
+        if (ox <= 0 || oy <= 0) continue;
+
+        anyOverlap = true;
+        const wa = b.fixed ? 1 : (a.fixed ? 0 : 0.5);
+        const wb = a.fixed ? 1 : (b.fixed ? 0 : 0.5);
+
+        if (ox < oy) {
+          const dir = b.cx >= a.cx ? 1 : -1;
+          a.cx -= dir * ox * wa;
+          b.cx += dir * ox * wb;
+        } else {
+          const dir = b.cy >= a.cy ? 1 : -1;
+          a.cy -= dir * oy * wa;
+          b.cy += dir * oy * wb;
+        }
+      }
+    }
+    if (!anyOverlap) break;
+  }
+
+  // Apply resolved thumb positions with a smooth CSS transition
+  const TRANS = 'left 0.42s cubic-bezier(0.4,0,0.2,1), top 0.42s cubic-bezier(0.4,0,0.2,1)';
+  let moved = false;
+
+  for (const item of items) {
+    if (item.fixed || item.kind !== 'thumb') continue;
+    const th  = item.ref;
+    const w   = item.ew, h = item.eh;
+    const nx  = Math.round(item.cx - w / 2);
+    const ny  = Math.round(item.cy - h / 2);
+    if (Math.abs(nx - th.x) < 1 && Math.abs(ny - th.y) < 1) continue;
+    th.x = nx; th.y = ny;
+    th.logicalX = nx / _zs; th.logicalY = ny / _zs;
+    th.el.style.transition = TRANS;
+    th.el.style.left = nx + 'px';
+    th.el.style.top  = ny + 'px';
+    th.el.addEventListener('transitionend', () => {
+      th.el.style.transition = '';
+      redrawAllLines();
+    }, { once: true });
+    moved = true;
+  }
+
+  if (moved) redrawAllLines();
+}
+
 // ── Open a single card at world position (wx, wy) ─────────────
 
 // fromThumb: { x, y, size, cardH } world bbox of the thumbnail being expanded, or null
@@ -2154,6 +2252,7 @@ function openCard(title, wx, wy, lang, fromThumb, parentCardTitle) {
         anchor.style.transition = '';
         const entry = ppCardMap.get(title);
         if (entry) { entry.animating = false; redrawAllLines(); }
+        scheduleOverlapResolve();
       }, { once: true });
     }));
   } else {
@@ -2572,11 +2671,17 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
   const BAND_W     = 700;
   const BAND_H     = 210;
   const CARD_H_EST = 380;
+  // Measure the actual rendered card height so bands and barrier use the true footprint.
+  // offsetHeight is zero only before layout, which can't happen here (we wait for transitionend).
+  const _parentCardEl = _freshEntry?.anchor?.querySelector('.pp-card');
+  const CARD_H_ACTUAL = _parentCardEl && _parentCardEl.offsetHeight > 0
+    ? Math.max(_parentCardEl.offsetHeight, CARD_H_EST)
+    : CARD_H_EST;
 
   // Logical-space bands above and below the card
   const xMin    = lwx - BAND_W / 2;
-  const topZone = { y1: lwy - CARD_H_EST / 2 - GAP - BAND_H, y2: lwy - CARD_H_EST / 2 - GAP };
-  const botZone = { y1: lwy + CARD_H_EST / 2 + GAP,          y2: lwy + CARD_H_EST / 2 + GAP + BAND_H };
+  const topZone = { y1: lwy - CARD_H_ACTUAL / 2 - GAP - BAND_H, y2: lwy - CARD_H_ACTUAL / 2 - GAP };
+  const botZone = { y1: lwy + CARD_H_ACTUAL / 2 + GAP,          y2: lwy + CARD_H_ACTUAL / 2 + GAP + BAND_H };
 
   // Skip nodes already visible on canvas
   const filtered = nodes.filter(n => {
@@ -2622,6 +2727,15 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
   // Collision-filter: avoid all existing cards and thumbs; spiral outward to find free slot
   const CPAD = 8;
   const existingRects = getOccupiedRects(parentTitle);
+  // Re-add parent card as a barrier so the spiral can't push thumbs back onto it.
+  // getOccupiedRects excludes the parent (so band positions just outside it aren't
+  // rejected), but without this barrier, dense graphs cause the spiral to settle
+  // inside the parent card.
+  const _parentCard = ppCardMap.get(parentTitle);
+  if (_parentCard) {
+    const _pcw = CARD_W * _zs, _pch = CARD_H_ACTUAL * _zs;
+    existingRects.push({ x: _parentCard.x - _pcw / 2, y: _parentCard.y - _pch / 2, w: _pcw, h: _pch });
+  }
   const placedRects   = [];
   const positions     = [];  // logical x, y
 
@@ -2712,6 +2826,7 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
           if (document.getElementById('pp-canvas')) {
             redrawAllLines();
             if (ppZoomLevel === -1) repositionLabels();
+            scheduleOverlapResolve();
           }
         }
       }, { once: true });
@@ -2734,6 +2849,11 @@ function renderThumbNodes(nodes, wx, wy, parentTitle) {
       }
     });
   });
+
+  // scheduleOverlapResolve is called from each bloom's animationend above;
+  // this is a safety-net call for any thumbs whose images were already cached
+  // (bloom fires synchronously, so animationend may have already run by now).
+  scheduleOverlapResolve();
 
 }
 
