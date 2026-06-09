@@ -482,6 +482,13 @@
     /* ── Play button active state ──────────────────────────── */
     #tts-play-btn.tts-btn-active { color: #e8622a; }
 
+    /* ── Title underline during reading (CSS highlight API unreliable on h1) */
+    .tts-title-word-active {
+      text-decoration: underline !important;
+      text-underline-offset: 5px;
+      text-decoration-color: #eaecf0;
+    }
+
     /* ── Bottom padding when bar is visible ────────────────── */
     body.tts-playing { padding-bottom: 60px; }
 
@@ -865,7 +872,8 @@ const TTS = {
   overlayTop: null,
   overlayBottom: null,
   articleTitle: '',      // normalized title for API calls
-  prefetchCache: {},     // key → { status, blobURL }
+  prefetchCache: {},     // key → { status, blobURL } | { promise }
+  vttCache: {},          // key → { cues } | { unavailable: true } | { promise }
   loadingSection: false,
   _aborted: false,       // true when stop() cancels in-flight fetches
   _sentences: [],        // [{ range, charCount, startTime }] for current section
@@ -877,6 +885,7 @@ const TTS = {
   offsetIndex: [],
   _wsSectionParas: null,
   _wsSectionIdx: null,
+  _rafId: null,
 };
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -1252,7 +1261,10 @@ function buildSectionList() {
     }
   }
   if (leadEl) {
-    list.push({ key: 'Lead', title: 'Lead', sectionIdx: -1, firstEl: leadEl, accEl: null });
+    // Use the h1 as the initial anchor so scroll/overlay start at the title
+    // (title words are read first in the audio). Falls back to leadEl if absent.
+    const h1El = document.querySelector('h1.article-title') || leadEl;
+    list.push({ key: 'Lead', title: 'Lead', sectionIdx: -1, firstEl: h1El, accEl: null });
     seen.add('Lead');
   }
 
@@ -1385,11 +1397,174 @@ function ttsSectionURL(key) {
   return `${TTS_API_BASE}/audio?article=${encodeURIComponent(TTS.articleTitle)}&section=${encodeURIComponent(key)}`;
 }
 
+function ttsVttURL(key) {
+  return `${TTS_API_BASE}/audio/${encodeURIComponent(TTS.articleTitle)}/${encodeURIComponent(key)}.vtt`;
+}
+
 function ttsRevokePrefetchCache() {
   for (const e of Object.values(TTS.prefetchCache)) {
     if (e.blobURL) URL.revokeObjectURL(e.blobURL);
   }
   TTS.prefetchCache = {};
+  TTS.vttCache = {};
+}
+
+/* ── VTT parsing ─────────────────────────────────────────── */
+function vttTimeToSec(ts) {
+  const [h, m, s] = ts.split(':');
+  return parseInt(h, 10) * 3600 + parseInt(m, 10) * 60 + parseFloat(s);
+}
+
+function parseVtt(text) {
+  const cues = [];
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].trim().match(/^(\d{2}:\d{2}:\d{2}\.\d{3})\s+-->\s+(\d{2}:\d{2}:\d{2}\.\d{3})/);
+    if (m) {
+      const word = (lines[++i] || '').trim();
+      if (word) cues.push({ word, startTime: vttTimeToSec(m[1]) });
+    }
+  }
+  return cues;
+}
+
+async function ttsGetVtt(key) {
+  const cached = TTS.vttCache[key];
+  if (cached?.cues)        return cached.cues;
+  if (cached?.unavailable) return null;
+  if (cached?.promise)     return cached.promise;
+
+  const promise = (async () => {
+    try {
+      const res = await fetch(ttsVttURL(key));
+      if (!res.ok) { TTS.vttCache[key] = { unavailable: true }; return null; }
+      const cues = parseVtt(await res.text());
+      TTS.vttCache[key] = { cues };
+      return cues;
+    } catch {
+      TTS.vttCache[key] = { unavailable: true };
+      return null;
+    }
+  })();
+
+  TTS.vttCache[key] = { promise };
+  return promise;
+}
+
+/* ── VTT word → DOM Range mapper ────────────────────────── */
+
+// The TTS audio opens with the article/section title before paragraph content.
+// Detect the title→content boundary as the first inter-cue gap > 0.7s in the
+// opening cues, and discard everything before it.
+function skipTitlePreamble(cues) {
+  const scanLimit = Math.min(cues.length - 1, 40);
+  for (let i = 1; i <= scanLimit; i++) {
+    if (cues[i].startTime - cues[i - 1].startTime > 0.7) return cues.slice(i);
+  }
+  return cues;
+}
+
+function buildWordRanges(sec, cues) {
+  // For named sections, skip the section-title preamble in the audio.
+  // For the Lead section we include the article title text in the DOM ranges
+  // instead, so no skipping is needed — title words map correctly to the h1.
+  if (sec.sectionIdx !== -1) {
+    cues = skipTitlePreamble(cues);
+  }
+  // Collect paragraphs (same logic as buildSectionSentences)
+  const paragraphs = [];
+  if (sec.sectionIdx === -1) {
+    const outer = document.querySelector('.article-outer');
+    for (const child of outer.children) {
+      if (child.classList.contains('acc-sections')) break;
+      if (child.classList.contains('art') && child.classList.contains('body')) {
+        child.querySelectorAll('p').forEach(p => {
+          if (p.textContent.trim().length > 20) paragraphs.push(p);
+        });
+      }
+    }
+  } else {
+    sec.accEl?.querySelector('.acc-body .art.body')?.querySelectorAll('p').forEach(p => {
+      if (p.textContent.trim().length > 20) paragraphs.push(p);
+    });
+  }
+
+  // Build flat text + node offset index (reuses textNodeAtChar utility)
+  const nodeOffsets = [];
+  let fullText = '';
+
+  // For the Lead section, prepend the article title's text nodes so that
+  // the VTT cues for the spoken title map to the visible h1 element.
+  if (sec.sectionIdx === -1) {
+    const titleEl = document.querySelector('h1.article-title');
+    if (titleEl) {
+      const tw = document.createTreeWalker(titleEl, NodeFilter.SHOW_TEXT);
+      let tn;
+      while ((tn = tw.nextNode())) {
+        nodeOffsets.push({ node: tn, start: fullText.length });
+        fullText += tn.data;
+      }
+      fullText += ' ';
+    }
+  }
+
+  for (const p of paragraphs) {
+    const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let anc = node.parentElement;
+        while (anc && anc !== p) {
+          if (anc.tagName === 'SUP' || anc.tagName === 'SMALL') return NodeFilter.FILTER_REJECT;
+          anc = anc.parentElement;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) {
+      nodeOffsets.push({ node, start: fullText.length });
+      fullText += node.data;
+    }
+  }
+
+  const fullTextLower = fullText.toLowerCase();
+  const result = [];
+  let searchPos = 0;
+  let misses = 0;
+
+  for (const cue of cues) {
+    // Strip leading/trailing punctuation; lowercase for matching
+    const core = cue.word.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '').toLowerCase();
+    if (!core) continue;
+
+    // Scan up to 200 chars ahead of current position
+    const scanEnd = Math.min(fullText.length, searchPos + 200);
+    const idx = fullTextLower.indexOf(core, searchPos);
+
+    if (idx !== -1 && idx < scanEnd) {
+      const sp = textNodeAtChar(nodeOffsets, idx);
+      const ep = textNodeAtChar(nodeOffsets, idx + core.length);
+      if (sp && ep) {
+        try {
+          const range = document.createRange();
+          range.setStart(sp.node, sp.offset);
+          range.setEnd(ep.node, ep.offset);
+          result.push({ range, startTime: cue.startTime });
+          searchPos = idx + core.length;
+          misses = 0;
+        } catch (_) {}
+      }
+    } else {
+      // VTT word not in DOM (TTS-normalized) — don't advance searchPos
+      misses++;
+      if (misses >= 10) {
+        // Safety valve: nudge forward to prevent stagnation on long normalized runs
+        searchPos = Math.min(fullText.length, searchPos + 15);
+        misses = 0;
+      }
+    }
+  }
+
+  return result;
 }
 
 async function ttsGetAudioURL(key) {
@@ -1456,7 +1631,10 @@ async function ttsStartSection(idx) {
   // Discard current audio cleanly
   if (TTS.audio) { TTS.audio.pause(); TTS.audio.src = ''; TTS.audio = null; }
 
-  // Clear sentence highlight
+  // Stop rAF highlight loop and clear state from previous section
+  if (TTS._rafId) { cancelAnimationFrame(TTS._rafId); TTS._rafId = null; }
+  const _prevH1 = document.querySelector('h1.article-title');
+  if (_prevH1) _prevH1.classList.remove('tts-title-word-active');
   if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('tts-current');
   TTS._sentences = []; TTS._sentenceIdx = -1; TTS._lastScrolledP = null;
 
@@ -1502,44 +1680,79 @@ async function ttsStartSection(idx) {
   audio.playbackRate = TTS.rate;
   TTS.audio = audio;
 
-  // Build sentence timing data
+  // Build sentence ranges as immediate fallback; upgrade to VTT word ranges when ready
   TTS._sentences = buildSectionSentences(sec);
-  audio.onloadedmetadata = () => buildSentenceTimings(TTS._sentences, audio.duration);
-
-  audio.ontimeupdate = () => {
-    if (!TTS._sentences.length) return;
-    const t = audio.currentTime;
-    let si = 0;
-    for (let i = TTS._sentences.length - 1; i >= 0; i--) {
-      if (t >= TTS._sentences[i].startTime) { si = i; break; }
-    }
-    if (si === TTS._sentenceIdx) return;
-    TTS._sentenceIdx = si;
-
-    const sent = TTS._sentences[si];
-    if (typeof CSS !== 'undefined' && CSS.highlights) {
-      CSS.highlights.set('tts-current', new Highlight(sent.range));
-    }
-
-    // Scroll + overlay when sentence crosses into a new paragraph
-    try {
-      const container = sent.range.startContainer;
-      const p = container.nodeType === Node.TEXT_NODE
-        ? container.parentElement?.closest('p')
-        : container.closest?.('p');
-      if (p && p !== TTS._lastScrolledP) {
-        TTS._lastScrolledP = p;
-        if (p !== TTS.activeEl) {
-          if (TTS.activeEl) TTS.activeEl.classList.remove('tts-para-active');
-          TTS.activeEl = p;
-          p.classList.add('tts-para-active');
-        }
-        scrollToCenter(p);
-        requestAnimationFrame(() => ttsUpdateOverlay(p));
-        setTimeout(() => ttsUpdateOverlay(p), 400);
+  audio.onloadedmetadata = () => {
+    buildSentenceTimings(TTS._sentences, audio.duration);  // proportional fallback active
+    ttsGetVtt(sec.key).then(cues => {
+      if (!cues || TTS.cursor !== idx) return;
+      const wordRanges = buildWordRanges(sec, cues);
+      if (wordRanges.length > 0) {
+        TTS._sentences  = wordRanges;   // upgrade to exact VTT word ranges
+        TTS._sentenceIdx = -1;          // force re-highlight on next timeupdate
       }
-    } catch (_) {}
+    });
   };
+
+  // rAF highlight loop — runs at ~60 fps for tight word-level sync
+  const _rafStep = () => {
+    if (!TTS._sentences.length || TTS.audio !== audio) { TTS._rafId = null; return; }
+    const t = audio.currentTime;
+
+    if (t < TTS._sentences[0].startTime) {
+      // Before first mapped word (e.g. section-title preamble): clear highlight
+      if (TTS._sentenceIdx !== -1) {
+        TTS._sentenceIdx = -1;
+        if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('tts-current');
+        const _h1 = document.querySelector('h1.article-title');
+        if (_h1) _h1.classList.remove('tts-title-word-active');
+      }
+    } else {
+      let si = 0;
+      for (let i = TTS._sentences.length - 1; i >= 0; i--) {
+        if (t >= TTS._sentences[i].startTime) { si = i; break; }
+      }
+      if (si !== TTS._sentenceIdx) {
+        TTS._sentenceIdx = si;
+        const sent = TTS._sentences[si];
+        if (typeof CSS !== 'undefined' && CSS.highlights) {
+          CSS.highlights.set('tts-current', new Highlight(sent.range));
+        }
+
+        // Toggle h1 underline class — CSS ::highlight text-decoration is unreliable on headings
+        const _inH1 = !!sent.range.startContainer.parentElement?.closest('h1');
+        const _h1 = document.querySelector('h1.article-title');
+        if (_h1) _h1.classList.toggle('tts-title-word-active', _inH1);
+
+        // Scroll + overlay when highlight crosses into a new paragraph
+        try {
+          const container = sent.range.startContainer;
+          const p = container.nodeType === Node.TEXT_NODE
+            ? container.parentElement?.closest('p')
+            : container.closest?.('p');
+          if (p && p !== TTS._lastScrolledP) {
+            TTS._lastScrolledP = p;
+            if (p !== TTS.activeEl) {
+              if (TTS.activeEl) TTS.activeEl.classList.remove('tts-para-active');
+              TTS.activeEl = p;
+              p.classList.add('tts-para-active');
+            }
+            scrollToCenter(p);
+            requestAnimationFrame(() => ttsUpdateOverlay(p));
+            setTimeout(() => ttsUpdateOverlay(p), 400);
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!audio.paused && !audio.ended) {
+      TTS._rafId = requestAnimationFrame(_rafStep);
+    } else {
+      TTS._rafId = null;
+    }
+  };
+
+  audio.onplay = () => { if (!TTS._rafId) TTS._rafId = requestAnimationFrame(_rafStep); };
 
   audio.onended = () => {
     if (typeof CSS !== 'undefined' && CSS.highlights) CSS.highlights.delete('tts-current');
@@ -1633,6 +1846,10 @@ function ttsStop() {
   TTS.sections = [];
   TTS._aborted = true;         // cancels in-flight prefetch polls
   TTS._wsSectionParas = null;
+
+  if (TTS._rafId) { cancelAnimationFrame(TTS._rafId); TTS._rafId = null; }
+  const _stopH1 = document.querySelector('h1.article-title');
+  if (_stopH1) _stopH1.classList.remove('tts-title-word-active');
 
   if (TTS.audio) { TTS.audio.pause(); TTS.audio.src = ''; TTS.audio = null; }
   speechSynthesis.cancel();
@@ -1783,9 +2000,12 @@ function ttsInit() {
     }, true);
   }
 
-  // Pre-fetch Lead audio immediately so first play is instant
+  // Pre-fetch Lead audio + VTT immediately so first play is instant
   const earlySecs = buildSectionList();
-  if (earlySecs.length) ttsGetAudioURL(earlySecs[0].key).catch(() => {});
+  if (earlySecs.length) {
+    ttsGetAudioURL(earlySecs[0].key).catch(() => {});
+    ttsGetVtt(earlySecs[0].key);   // fire-and-forget; result cached for playback
+  }
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -2020,10 +2240,23 @@ document.addEventListener('visibilitychange', () => {
 });
 document.addEventListener('pagehide', ttsHaltOnHide);
 
-// Auto-load a random vital article on open
-const randomArticle = VITAL_ARTICLES[Math.floor(Math.random() * VITAL_ARTICLES.length)];
-document.getElementById('article-input').value = randomArticle;
-loadArticle();
+// Auto-load a random article from the Toolforge pre-cached library on open
+(async () => {
+  const status = document.getElementById('status-text');
+  status.textContent = 'Loading library…';
+  try {
+    const res = await fetch('https://wiki-tts.toolforge.org/api/articles');
+    if (!res.ok) throw new Error('library unavailable');
+    const library = await res.json();
+    const entry = library[Math.floor(Math.random() * library.length)];
+    document.getElementById('article-input').value = entry.article;
+  } catch {
+    // Toolforge library unreachable — fall back to a known-good article
+    const fallback = VITAL_ARTICLES[Math.floor(Math.random() * VITAL_ARTICLES.length)];
+    document.getElementById('article-input').value = fallback;
+  }
+  loadArticle();
+})();
 </script>
 </body>
 </html>
