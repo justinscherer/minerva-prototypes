@@ -480,6 +480,112 @@
 
     /* ── Bottom padding when bar is visible ────────────────── */
     body.tts-playing { padding-bottom: 60px; }
+
+    /* ── Onboarding popover ─────────────────────────────────── */
+    #tts-onboard-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    #tts-onboard-popover {
+      position: fixed;
+      pointer-events: auto;
+      background: #fff;
+      border: 1px solid #a2a9b1;
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.14);
+      min-width: 256px;
+      max-width: 512px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .onboard-pointer {
+      position: absolute;
+      top: -9px;
+      width: 16px;
+      height: 16px;
+      transform: translateX(-50%) rotate(45deg);
+      background: #fff;
+      border-top: 1px solid #a2a9b1;
+      border-left: 1px solid #a2a9b1;
+    }
+    .onboard-thumbnail {
+      border-bottom: 1px solid #c8ccd1;
+      border-radius: 2px 2px 0 0;
+      overflow: hidden;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .onboard-thumbnail img {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+      max-height: 220px;
+      pointer-events: none;
+    }
+    .onboard-content {
+      padding: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .onboard-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding-bottom: 8px;
+    }
+    .onboard-title {
+      flex: 1;
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 28px;
+      color: #202122;
+      margin: 0;
+    }
+    .onboard-close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: -2px;
+      margin-right: -6px;
+      border-radius: 2px;
+      color: #54595d;
+      flex-shrink: 0;
+    }
+    .onboard-body {
+      font-size: 16px;
+      line-height: 26px;
+      color: #202122;
+      margin: 0;
+    }
+    .onboard-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 16px;
+    }
+    .onboard-cta-btn {
+      background: #3366cc;
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 22px;
+      padding: 4px 12px;
+      height: 32px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -9467,7 +9573,7 @@ Earth's
 
 00:02:10.968 --> 00:02:10.968
 environments.
-`
+`,
 };
 
 /* ────────────────────────────────────────────────────────────
@@ -9942,6 +10048,71 @@ function ttsUpdateBar() {
   }
 }
 
+function showTtsOnboard() {
+  if (document.getElementById('tts-onboard-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tts-onboard-overlay';
+  overlay.innerHTML = `
+    <div id="tts-onboard-popover">
+      <div class="onboard-thumbnail">
+        <img src="images/calm-reading-cloud.png" alt="">
+      </div>
+      <div class="onboard-content">
+        <div class="onboard-header">
+          <p class="onboard-title">Calm reading</p>
+          <button class="onboard-close-btn" aria-label="Dismiss">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+            </svg>
+          </button>
+        </div>
+        <p class="onboard-body">Try our new immersive reading experience. Focus on the text, hear the words out loud, and learn without distraction.</p>
+        <div class="onboard-actions">
+          <button class="onboard-cta-btn">Try calm reading</button>
+        </div>
+      </div>
+      <div class="onboard-pointer"></div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  positionOnboardPointer();
+
+  overlay.querySelector('.onboard-close-btn').addEventListener('click', dismissTtsOnboard);
+  overlay.querySelector('.onboard-cta-btn').addEventListener('click', function() {
+    dismissTtsOnboard();
+    ttsTogglePlay();
+  });
+}
+
+function dismissTtsOnboard() {
+  const overlay = document.getElementById('tts-onboard-overlay');
+  if (overlay) overlay.remove();
+}
+
+function positionOnboardPointer() {
+  const btn = document.getElementById('tts-play-btn');
+  const popover = document.getElementById('tts-onboard-popover');
+  if (!btn || !popover) return;
+  const pointer = popover.querySelector('.onboard-pointer');
+  if (!pointer) return;
+
+  const btnRect = btn.getBoundingClientRect();
+  const pad = 32;
+  const popW = Math.min(Math.max(window.innerWidth - pad * 2, 256), 512);
+  const popLeft = Math.max(pad, (window.innerWidth - popW) / 2);
+
+  // Pointer tip is ~12px above popover top (16px rotated-45° square, centered at -1px)
+  popover.style.top = (btnRect.bottom + 12) + 'px';
+  popover.style.left = popLeft + 'px';
+  popover.style.width = popW + 'px';
+
+  const offset = (btnRect.left + btnRect.width / 2) - popLeft;
+  pointer.style.left = offset + 'px';
+}
+window.addEventListener('resize', positionOnboardPointer);
+
 function ttsStart() {
   const paragraphs = buildParagraphList();
   if (!paragraphs.length) return;
@@ -10299,6 +10470,7 @@ async function loadArticle() {
     const { leadHTML, firstPara, sections } = parseArticleHTML(rawHTML);
 
     renderArticle({ title, displayTitle, langCount, commentCount, leadHTML, firstPara, sections, timestamp, user, related, dir });
+    setTimeout(showTtsOnboard, 400);
     status.textContent = `✓ ${title.replace(/_/g, ' ')}`;
 
   } catch (err) {
