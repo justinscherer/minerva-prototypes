@@ -1,0 +1,162 @@
+[
+  {
+    "wiki": "en.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 2.0,
+    "median_length": 50
+  },
+  {
+    "wiki": "es.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 3.5,
+    "median_length": 49
+  },
+  {
+    "wiki": "fr.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 0.5,
+    "median_length": 37
+  },
+  {
+    "wiki": "de.wikipedia.org",
+    "n_sampled": 197,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.0,
+    "median_length": 32
+  },
+  {
+    "wiki": "it.wikipedia.org",
+    "n_sampled": 196,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 3.1,
+    "median_length": 28
+  },
+  {
+    "wiki": "ja.wikipedia.org",
+    "n_sampled": 199,
+    "unit": "chars",
+    "threshold": 550,
+    "pct_over": 2.5,
+    "median_length": 115
+  },
+  {
+    "wiki": "ru.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 2.0,
+    "median_length": 35
+  },
+  {
+    "wiki": "zh.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "chars",
+    "threshold": 550,
+    "pct_over": 2.0,
+    "median_length": 107
+  },
+  {
+    "wiki": "pl.wikipedia.org",
+    "n_sampled": 195,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 2.6,
+    "median_length": 34
+  },
+  {
+    "wiki": "nl.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 0.5,
+    "median_length": 29
+  },
+  {
+    "wiki": "pt.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 4.0,
+    "median_length": 49
+  },
+  {
+    "wiki": "fa.wikipedia.org",
+    "n_sampled": 199,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.5,
+    "median_length": 31
+  },
+  {
+    "wiki": "he.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.5,
+    "median_length": 51
+  },
+  {
+    "wiki": "ko.wikipedia.org",
+    "n_sampled": 198,
+    "unit": "chars",
+    "threshold": 550,
+    "pct_over": 6.6,
+    "median_length": 150
+  },
+  {
+    "wiki": "ar.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 0.0,
+    "median_length": 31
+  },
+  {
+    "wiki": "id.wikipedia.org",
+    "n_sampled": 198,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.0,
+    "median_length": 40
+  },
+  {
+    "wiki": "uk.wikipedia.org",
+    "n_sampled": 194,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.0,
+    "median_length": 32
+  },
+  {
+    "wiki": "tr.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 0.5,
+    "median_length": 24
+  },
+  {
+    "wiki": "vi.wikipedia.org",
+    "n_sampled": 200,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 1.0,
+    "median_length": 24
+  },
+  {
+    "wiki": "cs.wikipedia.org",
+    "n_sampled": 199,
+    "unit": "words",
+    "threshold": 300,
+    "pct_over": 0.0,
+    "median_length": 45
+  }
+]

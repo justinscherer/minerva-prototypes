@@ -1,0 +1,272 @@
+<title>Lead sections over 300 words — top 20 wikis</title>
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --surface: #ffffff;
+    --border: #e2ded5;
+    --text: #23241f;
+    --text-dim: #6b6a63;
+    --accent: #2f5233;
+    --accent-soft: #eef1ea;
+    --rand: #9b9689;
+    --top: #b5541b;
+    --top-soft: #f7ece1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a;
+      --surface: #1f2123;
+      --border: #34363a;
+      --text: #ececea;
+      --text-dim: #9a9a96;
+      --accent: #8fbf9a;
+      --accent-soft: #223028;
+      --rand: #6c6a64;
+      --top: #e2a06f;
+      --top-soft: #332417;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --surface: #1f2123; --border: #34363a;
+    --text: #ececea; --text-dim: #9a9a96;
+    --accent: #8fbf9a; --accent-soft: #223028;
+    --rand: #6c6a64; --top: #e2a06f; --top-soft: #332417;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f5f2; --surface: #ffffff; --border: #e2ded5;
+    --text: #23241f; --text-dim: #6b6a63;
+    --accent: #2f5233; --accent-soft: #eef1ea;
+    --rand: #9b9689; --top: #b5541b; --top-soft: #f7ece1;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "IBM Plex Sans", Helvetica, Arial, sans-serif;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    line-height: 1.5;
+  }
+  h1 {
+    font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 0.3rem;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.98rem;
+    margin: 0 0 1.5rem;
+    max-width: 68ch;
+  }
+  .legend {
+    display: flex;
+    gap: 1.4rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .stat { background: var(--surface); padding: 1.1rem 1.1rem; }
+  .stat .label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-bottom: 0.35rem;
+  }
+  .stat .value { font-size: 1.55rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .stat .value small { font-size: 0.9rem; font-weight: 500; color: var(--text-dim); }
+  .stat.hi .value { color: var(--top); }
+
+  h2 { font-size: 1.05rem; font-weight: 600; margin: 2.2rem 0 0.2rem; }
+  .note { color: var(--text-dim); font-size: 0.88rem; margin: 0 0 1rem; max-width: 70ch; }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; min-width: 760px; }
+  thead th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    font-weight: 600;
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--text); }
+  thead th .arrow { opacity: 0.4; font-size: 0.7em; margin-left: 0.2em; }
+  tbody td {
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-soft); }
+  td.wiki { font-variant-numeric: normal; }
+  td.wiki .lang { color: var(--text-dim); font-size: 0.82em; }
+  .bar-track {
+    position: relative;
+    width: 130px;
+    height: 14px;
+  }
+  .bar {
+    position: absolute;
+    top: 0;
+    height: 5px;
+    border-radius: 3px;
+  }
+  .bar.rand { background: var(--rand); top: 1px; }
+  .bar.top { background: var(--top); top: 8px; }
+  .pct-cell { display: flex; align-items: center; gap: 0.7rem; }
+  .pct-nums { display: flex; flex-direction: column; font-size: 0.78rem; line-height: 1.35; min-width: 3.4em; }
+  .pct-nums .top-n { color: var(--top); font-weight: 600; }
+  .pct-nums .rand-n { color: var(--text-dim); }
+  .unit-tag { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.82rem;
+  }
+  footer p { margin: 0 0 0.5rem; }
+</style>
+
+<h1>Lead sections over 300 words</h1>
+<p class="subtitle">Two samples per wiki: 200 <strong>uniform-random</strong> mainspace articles vs. each wiki's 200 <strong>most-viewed</strong> articles (Pageviews API, June 2026). Lead measured via the same intro extract Minerva shows collapsed. CJK wikis (ja/zh/ko) use a ~550-character proxy instead of a word count.</p>
+
+<div class="legend">
+  <span><span class="swatch" style="background:var(--top)"></span>Most-read articles</span>
+  <span><span class="swatch" style="background:var(--rand)"></span>Random sample</span>
+</div>
+
+<div class="stats">
+  <div class="stat hi">
+    <div class="label">Most-read mean</div>
+    <div class="value">24.0<small>%</small></div>
+  </div>
+  <div class="stat">
+    <div class="label">Random-sample mean</div>
+    <div class="value">1.8<small>%</small></div>
+  </div>
+  <div class="stat hi">
+    <div class="label">Most-read range</div>
+    <div class="value">5–51<small>%</small></div>
+  </div>
+  <div class="stat">
+    <div class="label">Random-sample range</div>
+    <div class="value">0–6.6<small>%</small></div>
+  </div>
+</div>
+
+<h2>By wiki</h2>
+<p class="note">Sorted by % over threshold among most-read articles, descending. Click a column header to re-sort. Both samples are 200 articles/wiki.</p>
+
+<div class="table-wrap">
+<table id="t">
+<thead>
+<tr>
+  <th data-key="wiki">Wiki<span class="arrow"></span></th>
+  <th data-key="topPct">% over — most-read<span class="arrow"></span></th>
+  <th data-key="topMedian">Median lead — most-read<span class="arrow"></span></th>
+  <th data-key="randMedian">Median lead — random<span class="arrow"></span></th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<footer>
+  <p><strong>The gap is the headline.</strong> Random sampling put pagination impact at ~2% of articles — but that's dominated by short stubs, which make up most of any wiki's article count. Weighted by what people actually read, roughly <strong>1 in 4</strong> page views (mean 24%, up to 1-in-2 on vi/es/pt) would hit a lead section over 300 words. Reader-facing impact of this feature is much larger than raw article-count stats suggest.</p>
+  <p>Raw data: <code>lead_length_raw.csv</code> / <code>lead_length_top_raw.csv</code> · Summaries: <code>lead_length_summary.json</code> / <code>lead_length_top_summary.json</code> — all in the session scratchpad.</p>
+</footer>
+
+<script>
+  const DATA = [
+    {wiki:'en.wikipedia.org', name:'English', unit:'words', randPct:2.0, randMedian:50, topPct:37.5, topMedian:232},
+    {wiki:'es.wikipedia.org', name:'Spanish', unit:'words', randPct:3.5, randMedian:49, topPct:47.5, topMedian:287},
+    {wiki:'fr.wikipedia.org', name:'French', unit:'words', randPct:0.5, randMedian:37, topPct:29.0, topMedian:188},
+    {wiki:'de.wikipedia.org', name:'German', unit:'words', randPct:1.0, randMedian:32, topPct:9.5, topMedian:86},
+    {wiki:'it.wikipedia.org', name:'Italian', unit:'words', randPct:3.1, randMedian:28, topPct:20.0, topMedian:113},
+    {wiki:'ja.wikipedia.org', name:'Japanese', unit:'chars', randPct:2.5, randMedian:115, topPct:6.5, topMedian:139},
+    {wiki:'ru.wikipedia.org', name:'Russian', unit:'words', randPct:2.0, randMedian:35, topPct:25.0, topMedian:132},
+    {wiki:'zh.wikipedia.org', name:'Chinese', unit:'chars', randPct:2.0, randMedian:107, topPct:18.0, topMedian:207},
+    {wiki:'pl.wikipedia.org', name:'Polish', unit:'words', randPct:2.6, randMedian:34, topPct:13.0, topMedian:88},
+    {wiki:'nl.wikipedia.org', name:'Dutch', unit:'words', randPct:0.5, randMedian:29, topPct:5.0, topMedian:71},
+    {wiki:'pt.wikipedia.org', name:'Portuguese', unit:'words', randPct:4.0, randMedian:49, topPct:42.5, topMedian:229},
+    {wiki:'fa.wikipedia.org', name:'Persian', unit:'words', randPct:1.5, randMedian:31, topPct:28.5, topMedian:157},
+    {wiki:'he.wikipedia.org', name:'Hebrew', unit:'words', randPct:1.5, randMedian:51, topPct:6.5, topMedian:53},
+    {wiki:'ko.wikipedia.org', name:'Korean', unit:'chars', randPct:6.6, randMedian:150, topPct:26.5, topMedian:186},
+    {wiki:'ar.wikipedia.org', name:'Arabic', unit:'words', randPct:0.0, randMedian:31, topPct:37.0, topMedian:240},
+    {wiki:'id.wikipedia.org', name:'Indonesian', unit:'words', randPct:1.0, randMedian:40, topPct:15.5, topMedian:105},
+    {wiki:'uk.wikipedia.org', name:'Ukrainian', unit:'words', randPct:1.0, randMedian:32, topPct:14.5, topMedian:88},
+    {wiki:'tr.wikipedia.org', name:'Turkish', unit:'words', randPct:0.5, randMedian:24, topPct:22.0, topMedian:112},
+    {wiki:'vi.wikipedia.org', name:'Vietnamese', unit:'words', randPct:1.0, randMedian:24, topPct:51.0, topMedian:314},
+    {wiki:'cs.wikipedia.org', name:'Czech', unit:'words', randPct:0.0, randMedian:45, topPct:25.5, topMedian:111},
+  ];
+
+  let sortKey = 'topPct', sortDir = -1;
+
+  function render() {
+    const rows = [...DATA].sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+      return (av - bv) * sortDir;
+    });
+    const maxPct = Math.max(...DATA.map(d => Math.max(d.topPct, d.randPct)));
+    const tbody = document.querySelector('#t tbody');
+    tbody.innerHTML = rows.map(d => `
+      <tr>
+        <td class="wiki">${d.name} <span class="lang">${d.wiki}</span></td>
+        <td>
+          <div class="pct-cell">
+            <div class="bar-track">
+              <div class="bar top" style="width:${Math.max(3, d.topPct / maxPct * 130)}px"></div>
+              <div class="bar rand" style="width:${Math.max(3, d.randPct / maxPct * 130)}px"></div>
+            </div>
+            <div class="pct-nums">
+              <span class="top-n">${d.topPct.toFixed(1)}%</span>
+              <span class="rand-n">${d.randPct.toFixed(1)}%</span>
+            </div>
+          </div>
+        </td>
+        <td>${d.topMedian} <span class="unit-tag">${d.unit}</span></td>
+        <td>${d.randMedian} <span class="unit-tag">${d.unit}</span></td>
+      </tr>
+    `).join('');
+    document.querySelectorAll('#t thead th').forEach(th => {
+      th.querySelector('.arrow').textContent = th.dataset.key === sortKey ? (sortDir === 1 ? '▲' : '▼') : '';
+    });
+  }
+
+  document.querySelectorAll('#t thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = key === 'wiki' ? 1 : -1; }
+      render();
+    });
+  });
+
+  render();
+</script>
