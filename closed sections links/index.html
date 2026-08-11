@@ -131,20 +131,6 @@
     }
     .infochip svg { flex-shrink: 0; }
 
-    /* ── Image gallery ─────────────────────────────────────── */
-    .gallery-scroll {
-      overflow-x: auto; overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding-left: 16px;
-    }
-    .gallery-scroll::-webkit-scrollbar { display: none; }
-    .gallery-track { display: flex; gap: 4px; }
-    .gallery-img {
-      width: 175px; height: 175px;
-      flex-shrink: 0; object-fit: cover;
-      display: block; background: #f8f9fa;
-    }
     /* ── Article text (shared base) ────────────────────────── */
     .art {
       padding: 0 16px;
@@ -572,38 +558,6 @@ function parseArticleHTML(rawHTML) {
 }
 
 /* ────────────────────────────────────────────────────────────
-   Image extraction from DOM nodes
-──────────────────────────────────────────────────────────── */
-function collectImages(leadHTML, sections) {
-  const parser = new DOMParser();
-  const seen   = new Set();
-  const out    = [];
-
-  const chunks = [leadHTML, ...sections.map(s => s.html)];
-
-  for (const html of chunks) {
-    if (!html) continue;
-    const doc = parser.parseFromString(html, 'text/html');
-    doc.querySelectorAll('.infobox img, table.infobox img, .sidebar img, .taxobox img').forEach(el => el.remove());
-
-    doc.querySelectorAll('img').forEach(img => {
-      let src = img.getAttribute('src') ?? '';
-      if (!src) return;
-      if (src.startsWith('//')) src = 'https:' + src;
-      if (!src.startsWith('http')) return;
-      if (isDecorative(src)) return;
-
-      const big = src.replace(/\/(\d+)px-/, '/250px-');
-      if (seen.has(big)) return;
-      seen.add(big);
-      out.push({ src: big, alt: img.getAttribute('alt') ?? '' });
-    });
-  }
-
-  return out;
-}
-
-/* ────────────────────────────────────────────────────────────
    Render helpers
 ──────────────────────────────────────────────────────────── */
 function renderChips(langCount, commentCount) {
@@ -612,14 +566,6 @@ function renderChips(langCount, commentCount) {
       ${langCount ? `<span class="infochip">${SVG.translate} ${langCount} language${langCount !== 1 ? 's' : ''}</span>` : ''}
       ${commentCount ? `<span class="infochip">${SVG.comment} ${commentCount} comment${commentCount !== 1 ? 's' : ''}</span>` : ''}
     </div>`;
-}
-
-function renderGallery(images) {
-  if (!images.length) return '';
-  const imgs = images.map(i =>
-    `<img class="gallery-img" src="${esc(i.src)}" alt="${esc(i.alt)}" loading="lazy">`
-  ).join('');
-  return `<div class="gallery-scroll"><div class="gallery-track">${imgs}</div></div>`;
 }
 
 function renderAccordions(sections) {
@@ -646,8 +592,7 @@ function processBodyImages(root) {
   root.querySelectorAll('.art.body img').forEach(img => {
     const src = img.getAttribute('src') || '';
 
-    // Skip gallery, infobox, table-cell images (table layout breaks if we touch td/th)
-    if (img.closest('.gallery-scroll')) return;
+    // Skip infobox, table-cell images (table layout breaks if we touch td/th)
     if (img.closest('.infobox, table.infobox, .taxobox, .sidebar')) return;
     if (img.closest('td, th')) return;
     if (isDecorative(src)) return;
@@ -801,7 +746,6 @@ function renderLastEdited(timestamp, user) {
 ──────────────────────────────────────────────────────────── */
 function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML, firstPara, sections, timestamp, user, related, dir, lang }) {
   const root   = document.getElementById('article-root');
-  const images = collectImages(leadHTML, sections);
 
   // Extract infoboxes from lead before rendering so they go into Quick facts
   const leadDoc     = new DOMParser().parseFromString('<div>' + leadHTML + '</div>', 'text/html');
@@ -823,8 +767,6 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
         </div>
         ${renderChips(langCount, commentCount)}
       </div>
-
-      ${renderGallery(images)}
 
       <div class="lead-body">
         ${firstPara ? `<div class="art body">${firstPara}</div>` : ''}
