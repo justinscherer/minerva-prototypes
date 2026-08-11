@@ -311,27 +311,6 @@
       font-size: 24px; line-height: 31.2px;
       color: #101418; font-weight: normal;
     }
-    .acc-link-list {
-      display: flex; flex-wrap: nowrap;
-      overflow-x: auto; overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      gap: 6px; margin-top: 6px;
-      padding-bottom: 10px;
-    }
-    .acc-link-list::-webkit-scrollbar { display: none; }
-    .acc-chip {
-      display: inline-flex; align-items: center;
-      background: transparent; color: #101418;
-      border: 1px solid #101418;
-      border-radius: 4px; padding: 3px 12px;
-      font-size: 12px; line-height: 16px; min-height: 24px;
-      cursor: pointer; text-decoration: none;
-      white-space: nowrap; flex-shrink: 0;
-      font-style: normal;
-    }
-    .acc-chip:hover { background: #f0f2f5; }
-    .acc-chip.is-italic { font-style: italic; }
     /* focused target in the article body */
     .art.body a:focus,
     .art.body h3:focus,
@@ -643,64 +622,8 @@ function renderGallery(images) {
   return `<div class="gallery-scroll"><div class="gallery-track">${imgs}</div></div>`;
 }
 
-function collectSubsections(sectionHTML) {
-  if (!sectionHTML) return [];
-  const parser = new DOMParser();
-  const doc    = parser.parseFromString(sectionHTML, 'text/html');
-  const out    = [];
-
-  // Query only the heading elements themselves — querySelectorAll finds them
-  // whether they are bare or nested inside modern mw-heading wrapper divs.
-  // Querying the wrappers *and* the headings would double-count every entry.
-  doc.body.querySelectorAll('h3, h4, h5, h6').forEach((h, idx) => {
-    h.querySelectorAll('.mw-editsection').forEach(n => n.remove());
-    const text = h.textContent.trim();
-    if (text) out.push({ type: 'subsection', text, idx });
-  });
-
-  return out;
-}
-
-function collectSectionLinks(sectionHTML, skipInternalClean = false) {
-  if (!sectionHTML) return [];
-  const parser = new DOMParser();
-  const doc    = parser.parseFromString(sectionHTML, 'text/html');
-
-  // Remove citations, infoboxes, navboxes so we don't pick up their links
-  if (!skipInternalClean) {
-    doc.querySelectorAll('sup, .reference, .reflist, .infobox, table.infobox, .taxobox, .sidebar, .navbox').forEach(el => el.remove());
-  }
-
-  const seen = new Set();
-  const out  = [];
-
-  doc.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href') ?? '';
-    if (!href.startsWith('/wiki/')) return;
-    if (/^\/wiki\/(Help|Wikipedia|Special|File|Category|Template|Talk):/.test(href)) return;
-
-    const text = a.textContent.trim();
-    if (!text || /^\[\d+\]$/.test(text)) return;
-
-    const key = href.split('#')[0];
-    if (seen.has(key)) return;
-    seen.add(key);
-
-    const isItalic = !!a.closest('i, em') || !!a.querySelector('i, em');
-    out.push({ text, href: key, isItalic });
-  });
-
-  return out;
-}
-
 function renderAccordions(sections) {
   return sections.map((sec, idx) => {
-    // Subsections come first, then regular wiki links fill any remaining space
-    const subsections = collectSubsections(sec.html);
-    const links       = collectSectionLinks(sec.html).map(l => ({ type: 'link', ...l }));
-    const items       = [...subsections, ...links];
-    const itemsAttr   = items.length > 0 ? ` data-items="${esc(JSON.stringify(items))}"` : '';
-
     return `
     <div class="acc-section" data-i="${idx}">
       <div class="acc-header">
@@ -708,7 +631,6 @@ function renderAccordions(sections) {
           <span class="acc-chevron">${SVG.chevron}</span>
           <div class="acc-title-group">
             <span class="acc-title">${sec.title}</span>
-            ${items.length > 0 ? `<div class="acc-link-list"${itemsAttr}></div>` : ''}
           </div>
         </button>
         <div class="acc-divider"></div>
@@ -718,89 +640,6 @@ function renderAccordions(sections) {
       </div>
     </div>`;
   }).join('');
-}
-
-function renderChipLists(root) {
-  root.querySelectorAll('.acc-section').forEach(sec => {
-    const body = sec.querySelector('.acc-body .art.body');
-    if (!body) return;
-    body.querySelectorAll('h3, h4, h5, h6').forEach((h, idx) => {
-      h.dataset.subheadIdx = idx;
-      h.tabIndex = -1;
-    });
-  });
-
-  root.querySelectorAll('.acc-link-list[data-items]').forEach(container => {
-    let items;
-    try { items = JSON.parse(container.dataset.items); } catch(_) { return; }
-    if (!items.length) return;
-
-    container.innerHTML = items.map(item => {
-      if (item.type === 'subsection') {
-        return `<a class="acc-chip" href="#" data-subhead-idx="${item.idx}">${esc(item.text)}</a>`;
-      }
-      const italic = item.isItalic ? ' is-italic' : '';
-      return `<a class="acc-chip${italic}" href="${esc(item.href)}">${esc(item.text)}</a>`;
-    }).join('');
-
-    wireAccLinks(container);
-  });
-}
-
-function wireAccLinks(container) {
-  const sec = container.closest('.acc-section');
-
-  function openAndScroll(target, block) {
-    const wasOpen = sec && sec.classList.contains('open');
-    if (sec && !wasOpen) {
-      sec.classList.add('open');
-      sec.querySelector('.acc-btn').setAttribute('aria-expanded', 'true');
-    }
-    // Small delay when opening lets the body paint before we measure positions
-    setTimeout(() => {
-      if (block === 'center') {
-        // center is safe — the element ends up in the middle of the viewport,
-        // well clear of the sticky header at the top
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        // 'start' would place the element flush at the top of the viewport,
-        // directly behind the sticky control bar + sticky section header.
-        // Measure both sticky layers and offset manually.
-        const controlBar = document.getElementById('control-bar');
-        const accHeader  = sec && sec.querySelector('.acc-header');
-        const stickyH    = (controlBar ? controlBar.offsetHeight : 0)
-                         + (accHeader  ? accHeader.offsetHeight  : 0);
-        const top = target.getBoundingClientRect().top + window.scrollY - stickyH - 12;
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
-      setTimeout(() => target.focus({ preventScroll: true }), 350);
-    }, wasOpen ? 0 : 50);
-  }
-
-  // Subsection heading links — scroll to the tagged <h3>/<h4>/etc. in the body
-  container.querySelectorAll('a[data-subhead-idx]').forEach(a => {
-    const idx = a.dataset.subheadIdx;
-    a.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const body   = sec && sec.querySelector('.acc-body');
-      const target = body && body.querySelector(`[data-subhead-idx="${idx}"]`);
-      if (target) openAndScroll(target, 'start');
-    });
-  });
-
-  // Wiki-link anchors — scroll to the matching link in the body
-  container.querySelectorAll('a[href^="/wiki/"]').forEach(a => {
-    const wikiHref = a.getAttribute('href');
-    a.href = '#';
-    a.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const body   = sec && sec.querySelector('.acc-body');
-      const target = body && body.querySelector(`[data-wiki-href="${CSS.escape(wikiHref)}"]`);
-      if (target) openAndScroll(target, 'center');
-    });
-  });
 }
 
 function processBodyImages(root) {
@@ -992,17 +831,13 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
         ${cleanLeadHTML ? `<div class="art body">${cleanLeadHTML}</div>` : ''}
       </div>
 
-      ${infoboxHTML ? (() => {
-        const qfLinks = collectSectionLinks(infoboxHTML, true).map(l => ({ type: 'link', ...l }));
-        const qfAttr  = qfLinks.length > 0 ? ` data-items="${esc(JSON.stringify(qfLinks))}"` : '';
-        return `
+      ${infoboxHTML ? `
       <div class="acc-section acc-section--quick-facts">
         <div class="acc-header">
           <button class="acc-btn" aria-expanded="false">
             <span class="acc-chevron">${SVG.chevron}</span>
             <div class="acc-title-group">
               <span class="acc-title">Quick facts</span>
-              ${qfLinks.length > 0 ? `<div class="acc-link-list"${qfAttr}></div>` : ''}
             </div>
           </button>
           <div class="acc-divider"></div>
@@ -1010,8 +845,7 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
         <div class="acc-body">
           <div class="art body">${infoboxHTML}</div>
         </div>
-      </div>`;
-      })() : ''}
+      </div>` : ''}
 
       <div class="acc-sections">${renderAccordions(sections)}</div>
 
@@ -1077,9 +911,6 @@ function renderArticle({ title, displayTitle, langCount, commentCount, leadHTML,
   /* Sticky section header offset — keeps sticky headers below the control bar */
   const bar = document.getElementById('control-bar');
   document.documentElement.style.setProperty('--control-bar-h', bar.offsetHeight + 'px');
-
-  /* Populate and truncate section link lists */
-  renderChipLists(root);
 
   /* Full-width body images */
   processBodyImages(root);
